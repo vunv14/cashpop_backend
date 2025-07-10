@@ -1,9 +1,14 @@
 services:
   - type: web
     name: cashpop-api
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start:prod
+    runtime: node
+    repo: https://github.com/slimmaddy/cashpop_backend
+    plan: free
+    region: singapore
+    buildCommand: npm install; npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
@@ -46,5 +51,11 @@ services:
 
 databases:
   - name: cashpop_db
-    databaseName: cashpop
+    databaseName: cashpop_db
     user: cashpop
+    plan: free
+    region: singapore
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    postgresMajorVersion: "16"
