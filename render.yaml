@@ -47,5 +47,4 @@ services:
 databases:
   - name: cashpop_db
     databaseName: cashpop
-    plan: free
-    ipAllowList: []
+    user: cashpop
