@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: cashpop-api
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 15m
+      - key: JWT_REFRESH_EXPIRATION
+        value: 7d
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: cashpop-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: cashpop-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: cashpop-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cashpop-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: cashpop-db
+          property: database
+      - key: DB_SSL
+        value: true
+
+databases:
+  - name: cashpop-db
+    databaseName: cashpop
+    plan: starter
+    ipAllowList: []
