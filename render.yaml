@@ -45,7 +45,7 @@ services:
         value: true
 
 databases:
-  - name: cashpop-db
+  - name: cashpop_db
     databaseName: cashpop
     plan: starter
     ipAllowList: []
