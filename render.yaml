@@ -39,23 +39,23 @@ services:
         sync: false
       - key: DB_HOST
         fromDatabase:
-          name: cashpop-db
+          name: cashpop_db
           property: host
       - key: DB_PORT
         fromDatabase:
-          name: cashpop-db
+          name: cashpop_db
           property: port
       - key: DB_USERNAME
         fromDatabase:
-          name: cashpop-db
+          name: cashpop_db
           property: user
       - key: DB_PASSWORD
         fromDatabase:
-          name: cashpop-db
+          name: cashpop_db
           property: password
       - key: DB_DATABASE
         fromDatabase:
-          name: cashpop-db
+          name: cashpop_db
           property: database
       - key: DB_SSL
         value: true
