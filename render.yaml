@@ -1,3 +1,14 @@
+databases:
+  - name: cashpop_db
+    databaseName: cashpop_db
+    user: cashpop
+    plan: free
+    region: singapore
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    postgresMajorVersion: "16"
+
 services:
   - type: web
     name: cashpop-api
@@ -49,13 +60,3 @@ services:
       - key: DB_SSL
         value: true
 
-databases:
-  - name: cashpop_db
-    databaseName: cashpop_db
-    user: cashpop
-    plan: free
-    region: singapore
-    ipAllowList:
-      - source: 0.0.0.0/0
-        description: everywhere
-    postgresMajorVersion: "16"
