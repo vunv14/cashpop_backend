@@ -22,7 +22,7 @@ services:
     autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
-        value: production
+        value: development
       - key: PORT
         value: 3000
       - key: JWT_SECRET
