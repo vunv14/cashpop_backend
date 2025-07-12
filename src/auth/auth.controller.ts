@@ -15,10 +15,10 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
-import { CreateUserDto } from "../users/dto/create-user.dto";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
+import { EmailVerificationGuard } from "./guards/email-verification.guard";
 import { FacebookAuthDto } from "./dto/facebook-auth.dto";
 import { AuthResponseDto } from "./dto/auth-response.dto";
 import { TokensResponseDto } from "./dto/tokens-response.dto";
@@ -27,22 +27,59 @@ import { UserProfileDto } from "./dto/user-profile.dto";
 import { LoginDto } from "./dto/login.dto";
 import { LogoutDto } from "./dto/logout.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { RegisterDto } from "./dto/register.dto";
+import { VerifyEmailInitiateDto } from "./dto/verify-email-initiate.dto";
+import { VerifyEmailOtpDto } from "./dto/verify-email-otp.dto";
+import { 
+  VerifyEmailInitiateResponseDto, 
+  VerifyEmailOtpResponseDto 
+} from "./dto/verify-email-response.dto";
 
 @ApiTags("Authentication")
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+
+  @Post("verify-email-initiate")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Initiate email verification by sending OTP" })
+  @ApiResponse({
+    status: 200,
+    description: "Verification email sent",
+    type: VerifyEmailInitiateResponseDto
+  })
+  @ApiResponse({ status: 409, description: "Email already exists" })
+  async verifyEmailInitiate(@Body() verifyEmailInitiateDto: VerifyEmailInitiateDto) {
+    return this.authService.initiateEmailVerification(verifyEmailInitiateDto.email);
+  }
+
+  @Post("verify-email-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify email with OTP" })
+  @ApiResponse({
+    status: 200,
+    description: "Email verified successfully",
+    type: VerifyEmailOtpResponseDto
+  })
+  @ApiResponse({ status: 400, description: "Invalid or expired OTP" })
+  async verifyEmailOtp(@Body() verifyEmailOtpDto: VerifyEmailOtpDto) {
+    return this.authService.verifyEmailOtp(verifyEmailOtpDto.email, verifyEmailOtpDto.otp);
+  }
+
+  @UseGuards(EmailVerificationGuard)
   @Post("register")
-  @ApiOperation({ summary: "Register a new user" })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Register a new user with verified email token" })
   @ApiResponse({ 
     status: 201, 
     description: "User successfully registered",
     type: AuthResponseDto
   })
   @ApiResponse({ status: 409, description: "Email already exists" })
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+  @ApiResponse({ status: 401, description: "Invalid or expired verification token" })
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
   @UseGuards(LocalAuthGuard)

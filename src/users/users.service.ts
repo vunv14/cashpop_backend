@@ -71,6 +71,80 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+  /**
+   * Create a user with just an email and set isEmailVerified to false
+   * @param email User's email
+   * @returns Created user
+   */
+  async createUnverifiedUser(email: string): Promise<User> {
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException("Email already exists");
+    }
+
+    // Generate a temporary username based on the email (before the @ symbol)
+    let baseUsername = `temp_${email.split('@')[0]}`;
+    let username = baseUsername;
+    let counter = 1;
+
+    // Check if username exists, if so, append a number
+    while (await this.findByUsername(username)) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    const user = this.usersRepository.create({
+      email,
+      username,
+      isEmailVerified: false,
+    });
+
+    return this.usersRepository.save(user);
+  }
+
+  /**
+   * Update user's verification status
+   * @param email User's email
+   * @param isVerified Verification status
+   * @returns Updated user
+   */
+  async updateVerificationStatus(email: string, isVerified: boolean): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+
+    user.isEmailVerified = isVerified;
+    return this.usersRepository.save(user);
+  }
+
+  /**
+   * Complete user registration by updating username and password
+   * @param email User's email
+   * @param username User's username
+   * @param password User's password
+   * @returns Updated user
+   */
+  async completeRegistration(email: string, username: string, password: string): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+
+    // Check if username already exists (and it's not the current user's username)
+    if (username !== user.username) {
+      const existingUserByUsername = await this.findByUsername(username);
+      if (existingUserByUsername) {
+        throw new ConflictException("Username already exists");
+      }
+    }
+
+    user.username = username;
+    user.password = await bcrypt.hash(password, 10);
+
+    return this.usersRepository.save(user);
+  }
+
   async findAll(): Promise<User[]> {
     return this.usersRepository.find();
   }

@@ -2,19 +2,25 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
+  NotFoundException,
 } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { UsersService } from "../users/users.service";
 import { CreateUserDto } from "../users/dto/create-user.dto";
 import { User } from "../users/entities/user.entity";
+import { ValkeyService } from "../services/valkey.service";
+import { MailerService } from "../services/mailer.service";
+import { TokenService } from "./token.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private valkeyService: ValkeyService,
+    private mailerService: MailerService,
+    private tokenService: TokenService
   ) {}
 
   async validateUser(usernameOrEmail: string, password: string): Promise<any> {
@@ -27,7 +33,7 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const tokens = await this.getTokens(user.id);
+    const tokens = await this.tokenService.generateAuthTokens(user.id);
     await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
     return {
       user: {
@@ -39,11 +45,29 @@ export class AuthService {
     };
   }
 
+  /**
+   * Register a new user with verified email token
+   * @param createUserDto DTO with username, password, and token
+   * @returns User and authentication tokens
+   */
   async register(createUserDto: CreateUserDto) {
     try {
-      const user = await this.usersService.create(createUserDto);
-      const tokens = await this.getTokens(user.id);
-      await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
+      // Check if email already exists
+      const existingUser = await this.usersService.findByEmail(createUserDto.email);
+      if (existingUser) {
+        throw new ConflictException("Email already exists");
+      }
+
+      // Create the user
+      const user = await this.usersService.create({
+        email: createUserDto.email,
+        username: createUserDto.username,
+        password: createUserDto.password,
+      });
+
+      // Generate tokens
+      const tokens = await this.tokenService.generateAuthTokens(user.id);
+
       return {
         user: {
           id: user.id,
@@ -53,7 +77,7 @@ export class AuthService {
         ...tokens,
       };
     } catch (error) {
-      if (error instanceof ConflictException) {
+      if (error instanceof ConflictException || error instanceof BadRequestException || error instanceof UnauthorizedException) {
         throw error;
       }
       throw new UnauthorizedException("Registration failed");
@@ -72,7 +96,7 @@ export class AuthService {
       throw new UnauthorizedException("Access Denied");
     }
 
-    const tokens = await this.getTokens(user.id);
+    const tokens = await this.tokenService.generateAuthTokens(user.id);
     await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
     return tokens;
   }
@@ -130,7 +154,7 @@ export class AuthService {
       user = await this.usersService.createFacebookUser(email, facebookId);
     }
 
-    const tokens = await this.getTokens(user.id);
+    const tokens = await this.tokenService.generateAuthTokens(user.id);
     await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
 
     return {
@@ -143,30 +167,65 @@ export class AuthService {
     };
   }
 
-  private async getTokens(userId: string) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { sub: userId },
-        {
-          secret: this.configService.get("JWT_SECRET"),
-          expiresIn: this.configService.get("JWT_EXPIRATION", "15m"),
-        }
-      ),
-      this.jwtService.signAsync(
-        { sub: userId },
-        {
-          secret: this.configService.get(
-            "JWT_REFRESH_SECRET",
-            this.configService.get("JWT_SECRET")
-          ),
-          expiresIn: this.configService.get("JWT_REFRESH_EXPIRATION", "7d"),
-        }
-      ),
-    ]);
+  /**
+   * Initiate email verification by sending OTP
+   * @param email Email address to verify
+   * @returns Message indicating verification email was sent
+   */
+  async initiateEmailVerification(email: string) {
+    // Check if email already exists
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException("Email already exists");
+    }
+
+    // Check if OTP already exists for this email
+    const existingOtp = await this.valkeyService.getOtp(email);
+    if (existingOtp) {
+      throw new BadRequestException("OTP already sent to this email address. Please check your inbox or try again after 5 minutes.");
+    }
+
+    // Generate a random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP in Valkey (with 5 minutes TTL as configured in ValkeyService)
+    await this.valkeyService.storeOtp(email, otp);
+
+    // Send OTP via email
+    await this.mailerService.sendOtpEmail(email, otp);
 
     return {
-      accessToken,
-      refreshToken,
+      message: "Verification email sent",
     };
   }
+
+  /**
+   * Verify email with OTP
+   * @param email Email address to verify
+   * @param otp One-time password
+   * @returns Verification status and token
+   */
+  async verifyEmailOtp(email: string, otp: string) {
+    // Get stored OTP from Valkey
+    const storedOtpData = await this.valkeyService.getOtp(email);
+
+    if (!storedOtpData) {
+      throw new BadRequestException("OTP expired or not found");
+    }
+
+    // Check if OTP matches
+    if (storedOtpData.otp !== otp) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    // Generate a short-lived JWT token with email in payload
+    const token = await this.tokenService.generateEmailVerificationToken(email);
+
+    return {
+      message: "Email verified successfully",
+      verified: true,
+      token,
+    };
+  }
+
 }
