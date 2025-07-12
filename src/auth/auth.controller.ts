@@ -106,14 +106,13 @@ export class AuthController {
     description: "Logout successful",
     type: LogoutResponseDto
   })
-  async logout(@Body() logoutDto: LogoutDto, @Req() req) {
-    return this.authService.logout(req.user.userId);
+  async logout(@Req() req) {
+    return this.authService.logout(req.user);
   }
 
   @UseGuards(RefreshGuard)
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Refresh access token" })
   @ApiResponse({ 
     status: 200, 
@@ -122,7 +121,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   async refreshTokens(@Body() refreshTokenDto: RefreshTokenDto, @Req() req) {
-    return this.authService.refreshTokens(req.user.userId);
+    return this.authService.refreshTokens(req.user);
   }
 
   @Post("facebook")

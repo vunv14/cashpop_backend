@@ -9,13 +9,13 @@ export class RefreshStrategy extends PassportStrategy(Strategy, "refresh") {
     private authService: AuthService,
   ) {
     super({
-      usernameField: "userId",
+      usernameField: "username",
       passwordField: "refreshToken",
     });
   }
 
-  async validate(userId: string, refreshToken: string): Promise<any> {
-    const user = await this.authService.validateRefreshToken(userId, refreshToken);
+  async validate(username: string, refreshToken: string): Promise<any> {
+    const user = await this.authService.validateRefreshToken(username, refreshToken);
     if (!user) {
       throw new UnauthorizedException("Invalid refresh token");
     }

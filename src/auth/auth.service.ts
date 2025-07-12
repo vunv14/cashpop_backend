@@ -8,7 +8,6 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { UsersService } from "../users/users.service";
 import { CreateUserDto } from "../users/dto/create-user.dto";
-import { User } from "../users/entities/user.entity";
 import { ValkeyService } from "../services/valkey.service";
 import { MailerService } from "../services/mailer.service";
 import { TokenService } from "./token.service";
@@ -17,14 +16,13 @@ import { TokenService } from "./token.service";
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private configService: ConfigService,
     private valkeyService: ValkeyService,
     private mailerService: MailerService,
     private tokenService: TokenService
   ) {}
 
-  async validateUser(usernameOrEmail: string, password: string): Promise<any> {
-    const user = await this.usersService.findByUsernameOrEmail(usernameOrEmail);
+  async validateUser(username: string, password: string): Promise<any> {
+    const user = await this.usersService.findByUsername(username);
     if (user && (await user.validatePassword(password))) {
       const { password, refreshToken, ...result } = user;
       return result;
@@ -32,9 +30,9 @@ export class AuthService {
     return null;
   }
 
-  async validateRefreshToken(userId: string, refreshToken: string): Promise<any> {
-      const user = await this.usersService.findOne(userId);
-      if (!user && (await user.validateRefreshToken(refreshToken))) {
+  async validateRefreshToken(username: string, refreshToken: string): Promise<any> {
+      const user = await this.usersService.findByUsername(username);
+      if (user && (await user.validateRefreshToken(refreshToken))) {
           const { password, refreshToken, ...result } = user;
           return result;
       }
@@ -70,17 +68,16 @@ export class AuthService {
       }
 
       // Create the user
+      const refreshToken = this.tokenService.generateRefreshToken();
       const user = await this.usersService.create({
         email: createUserDto.email,
         username: createUserDto.username,
         password: createUserDto.password,
+        refreshToken,
       });
 
       // Generate tokens
-      const tokens = await this.tokenService.generateAuthTokens(user.id);
-
-      // Store the hashed refresh token in the database
-      await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
+      const accessToken = await this.tokenService.generateAccessToken(user.id);
 
       return {
         user: {
@@ -88,7 +85,8 @@ export class AuthService {
           username: user.username,
           email: user.email,
         },
-        ...tokens,
+        refreshToken,
+        accessToken,
       };
     } catch (error) {
       if (error instanceof ConflictException || error instanceof BadRequestException || error instanceof UnauthorizedException) {
@@ -98,14 +96,14 @@ export class AuthService {
     }
   }
 
-  async refreshTokens(userId: string) {
+  async refreshTokens(user: any) {
     // Generate new tokens
-    const accessToken = await this.tokenService.generateAccessToken(userId);
+    const accessToken = await this.tokenService.generateAccessToken(user.id);
     return { accessToken };
   }
 
-  async logout(userId: string) {
-    await this.usersService.setRefreshToken(userId, null);
+  async logout(user: any) {
+    await this.usersService.setRefreshToken(user.id, null);
     return { message: "Logout successful" };
   }
 

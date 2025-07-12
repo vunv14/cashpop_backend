@@ -4,7 +4,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  BeforeInsert, BeforeUpdate,
+  BeforeInsert, BeforeUpdate, AfterLoad,
 } from "typeorm";
 import { Exclude } from "class-transformer";
 import * as bcrypt from "bcrypt";
@@ -51,10 +51,19 @@ export class User {
   @ApiProperty({ description: "The date when the user was last updated" })
   updatedAt: Date;
 
+  // temp property to hold current value before update
+  private _originalPassword: string;
+
   @BeforeInsert()
-  @BeforeUpdate()
   async hashPassword() {
     if (this.password) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
+  }
+
+  @BeforeUpdate()
+  async hashPasswordOnUpdate() {
+    if (this.password && this.password !== this._originalPassword) {
       this.password = await bcrypt.hash(this.password, 10);
     }
   }
@@ -64,10 +73,19 @@ export class User {
     return bcrypt.compare(password, this.password);
   }
 
+  // temp property to hold current value before update
+  private _originalRefreshToken: string;
+
   @BeforeInsert()
-  @BeforeUpdate()
   async hashRefreshToken() {
     if (this.refreshToken) {
+      this.refreshToken = await bcrypt.hash(this.refreshToken, 10);
+    }
+  }
+
+  @BeforeUpdate()
+  async hashRefreshTokenOnUpdate() {
+    if (this.refreshToken && this.refreshToken !== this._originalRefreshToken) {
       this.refreshToken = await bcrypt.hash(this.refreshToken, 10);
     }
   }
@@ -75,5 +93,12 @@ export class User {
   async validateRefreshToken(refreshToken: string): Promise<boolean> {
     if (!this.refreshToken) return false;
     return bcrypt.compare(refreshToken, this.refreshToken);
+  }
+
+  // Hook to capture the original value after loading
+  @AfterLoad()
+  private loadOriginalPasswordAndRefreshToken() {
+    this._originalPassword = this.password;
+    this._originalRefreshToken = this.refreshToken;
   }
 }

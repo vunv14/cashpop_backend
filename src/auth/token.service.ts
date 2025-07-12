@@ -49,7 +49,7 @@ export class TokenService {
      * Generate a random refresh token
      * @returns Random string to be used as refresh token
      */
-    private generateRefreshToken(): string {
+    generateRefreshToken(): string {
         return crypto.randomBytes(40).toString('hex');
     }
 

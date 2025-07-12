@@ -3,12 +3,12 @@ import { IsNotEmpty, IsString, IsUUID } from "class-validator";
 
 export class RefreshTokenDto {
   @ApiProperty({
-    description: "User ID",
-    example: "123e4567-e89b-12d3-a456-426614174000",
+    description: "The username of the user",
+    example: "johndoe",
   })
-  @IsUUID()
-  @IsNotEmpty({ message: "User ID is required" })
-  userId: string;
+  @IsString()
+  @IsNotEmpty({ message: "Username is required" })
+  username: string;
 
   @ApiProperty({
     description: "Refresh token",
