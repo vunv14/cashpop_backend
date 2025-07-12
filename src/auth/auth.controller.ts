@@ -17,7 +17,7 @@ import {
 import { AuthService } from "./auth.service";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
-import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
+import { RefreshGuard } from "./guards/refresh.guard";
 import { EmailVerificationGuard } from "./guards/email-verification.guard";
 import { FacebookAuthDto } from "./dto/facebook-auth.dto";
 import { AuthResponseDto } from "./dto/auth-response.dto";
@@ -110,7 +110,7 @@ export class AuthController {
     return this.authService.logout(req.user.userId);
   }
 
-  @UseGuards(JwtRefreshGuard)
+  @UseGuards(RefreshGuard)
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
@@ -122,9 +122,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   async refreshTokens(@Body() refreshTokenDto: RefreshTokenDto, @Req() req) {
-    const userId = req.user.sub;
-    const refreshToken = req.user.refreshToken;
-    return this.authService.refreshTokens(userId, refreshToken);
+    return this.authService.refreshTokens(req.user.userId);
   }
 
   @Post("facebook")

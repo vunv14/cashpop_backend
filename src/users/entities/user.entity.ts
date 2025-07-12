@@ -4,7 +4,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  BeforeInsert,
+  BeforeInsert, BeforeUpdate,
 } from "typeorm";
 import { Exclude } from "class-transformer";
 import * as bcrypt from "bcrypt";
@@ -38,10 +38,6 @@ export class User {
   })
   facebookId: string;
 
-  @Column({ default: false })
-  @ApiProperty({ description: "Whether the user email is verified" })
-  isEmailVerified: boolean;
-
   @Column({ nullable: true })
   @ApiProperty({ description: "The refresh token for JWT authentication" })
   @Exclude()
@@ -56,6 +52,7 @@ export class User {
   updatedAt: Date;
 
   @BeforeInsert()
+  @BeforeUpdate()
   async hashPassword() {
     if (this.password) {
       this.password = await bcrypt.hash(this.password, 10);
@@ -65,5 +62,18 @@ export class User {
   async validatePassword(password: string): Promise<boolean> {
     if (!this.password) return false;
     return bcrypt.compare(password, this.password);
+  }
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashRefreshToken() {
+    if (this.refreshToken) {
+      this.refreshToken = await bcrypt.hash(this.refreshToken, 10);
+    }
+  }
+
+  async validateRefreshToken(refreshToken: string): Promise<boolean> {
+    if (!this.refreshToken) return false;
+    return bcrypt.compare(refreshToken, this.refreshToken);
   }
 }

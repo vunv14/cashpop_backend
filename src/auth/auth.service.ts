@@ -26,15 +26,26 @@ export class AuthService {
   async validateUser(usernameOrEmail: string, password: string): Promise<any> {
     const user = await this.usersService.findByUsernameOrEmail(usernameOrEmail);
     if (user && (await user.validatePassword(password))) {
-      const { password, ...result } = user;
+      const { password, refreshToken, ...result } = user;
       return result;
     }
     return null;
   }
 
+  async validateRefreshToken(userId: string, refreshToken: string): Promise<any> {
+      const user = await this.usersService.findOne(userId);
+      if (!user && (await user.validateRefreshToken(refreshToken))) {
+          const { password, refreshToken, ...result } = user;
+          return result;
+      }
+      return null;
+  }
+
   async login(user: any) {
     const tokens = await this.tokenService.generateAuthTokens(user.id);
+    // Store the hashed refresh token in the database
     await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
+
     return {
       user: {
         id: user.id,
@@ -68,6 +79,9 @@ export class AuthService {
       // Generate tokens
       const tokens = await this.tokenService.generateAuthTokens(user.id);
 
+      // Store the hashed refresh token in the database
+      await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
+
       return {
         user: {
           id: user.id,
@@ -84,21 +98,10 @@ export class AuthService {
     }
   }
 
-  async refreshTokens(userId: string, refreshToken: string) {
-    const user = await this.usersService.findOne(userId);
-    if (!user || !user.refreshToken) {
-      throw new UnauthorizedException("Access Denied");
-    }
-
-    // In a real application, you should verify the refresh token
-    // This is a simplified version
-    if (user.refreshToken !== refreshToken) {
-      throw new UnauthorizedException("Access Denied");
-    }
-
-    const tokens = await this.tokenService.generateAuthTokens(user.id);
-    await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
-    return tokens;
+  async refreshTokens(userId: string) {
+    // Generate new tokens
+    const accessToken = await this.tokenService.generateAccessToken(userId);
+    return { accessToken };
   }
 
   async logout(userId: string) {
@@ -155,6 +158,8 @@ export class AuthService {
     }
 
     const tokens = await this.tokenService.generateAuthTokens(user.id);
+
+    // Store the hashed refresh token in the database
     await this.usersService.setRefreshToken(user.id, tokens.refreshToken);
 
     return {

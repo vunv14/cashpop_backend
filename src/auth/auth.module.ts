@@ -9,7 +9,7 @@ import { AuthController } from "./auth.controller";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { FacebookStrategy } from "./strategies/facebook.strategy";
-import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
+import { RefreshStrategy } from "./strategies/refresh.strategy";
 import { EmailVerificationStrategy } from "./strategies/email-verification.strategy";
 import { TokenService } from "./token.service";
 
@@ -35,7 +35,7 @@ import { TokenService } from "./token.service";
     TokenService,
     LocalStrategy,
     JwtStrategy,
-    JwtRefreshStrategy,
+    RefreshStrategy,
     FacebookStrategy,
     EmailVerificationStrategy,
   ],
