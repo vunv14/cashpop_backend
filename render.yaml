@@ -75,10 +75,4 @@ services:
           name: cashpop
           type: keyvalue
           property: port
-      - key: VALKEY_PASSWORD
-        fromService:
-          name: cashpop
-          type: keyvalue
-          property: password
-      - key: VALKEY_DB
-        value: 0
+
