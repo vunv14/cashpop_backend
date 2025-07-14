@@ -10,6 +10,12 @@ databases:
     postgresMajorVersion: "16"
 
 services:
+  - type: keyvalue
+    name: cashpop
+    plan: free
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [ ]
   - type: web
     name: cashpop-api
     runtime: node
@@ -59,4 +65,20 @@ services:
           property: database
       - key: DB_SSL
         value: true
-
+      - key: VALKEY_HOST
+        fromService:
+          name: cashpop
+          type: keyvalue
+          property: host
+      - key: VALKEY_PORT
+        fromService:
+          name: cashpop
+          type: keyvalue
+          property: port
+      - key: VALKEY_PASSWORD
+        fromService:
+          name: cashpop
+          type: keyvalue
+          property: password
+      - key: VALKEY_DB
+        value: 0
