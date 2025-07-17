@@ -10,3 +10,11 @@ export class LogoutDto {
   @IsNotEmpty({ message: "User ID is required" })
   userId: string;
 }
+
+export class LogoutResponseDto {
+  @ApiProperty({
+    description: "Status message",
+    example: "Logout successful",
+  })
+  message: string;
+}

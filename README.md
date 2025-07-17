@@ -5,6 +5,7 @@ A NestJS backend service with PostgreSQL, PassportJS, and Swagger.
 ## Features
 
 - User authentication (register, login, logout)
+- Password reset with email verification
 - JWT access and refresh tokens
 - Facebook social login
 - RESTful API with Swagger documentation
@@ -147,6 +148,27 @@ Request body:
   "token": "facebook-access-token"
 }
 ```
+
+### Password Reset
+
+The password reset flow consists of three steps:
+
+1. Initiate password reset:
+```
+POST /auth/reset-password-initiate
+```
+
+2. Verify OTP:
+```
+POST /auth/reset-password-verify-otp
+```
+
+3. Reset password:
+```
+POST /auth/reset-password-submit
+```
+
+For detailed information about the password reset flow, request/response examples, and error handling, see [RESET_PASSWORD_USAGE.md](RESET_PASSWORD_USAGE.md).
 
 ## Deployment
 

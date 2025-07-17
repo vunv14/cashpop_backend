@@ -21,19 +21,17 @@ import { RefreshGuard } from "./guards/refresh.guard";
 import { EmailVerificationGuard } from "./guards/email-verification.guard";
 import { FacebookAuthDto } from "./dto/facebook-auth.dto";
 import { AuthResponseDto } from "./dto/auth-response.dto";
-import { TokensResponseDto } from "./dto/tokens-response.dto";
-import { LogoutResponseDto } from "./dto/logout-response.dto";
 import { UserProfileDto } from "./dto/user-profile.dto";
 import { LoginDto } from "./dto/login.dto";
-import { LogoutDto } from "./dto/logout.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { RegisterDto } from "./dto/register.dto";
-import { VerifyEmailInitiateDto } from "./dto/verify-email-initiate.dto";
-import { VerifyEmailOtpDto } from "./dto/verify-email-otp.dto";
-import { 
-  VerifyEmailInitiateResponseDto, 
-  VerifyEmailOtpResponseDto 
-} from "./dto/verify-email-response.dto";
+import { VerifyEmailInitiateDto, VerifyEmailInitiateResponseDto } from "./dto/verify-email-initiate.dto";
+import { VerifyEmailOtpDto, VerifyEmailOtpResponseDto } from "./dto/verify-email-otp.dto";
+import { ResetPasswordInitiateDto, ResetPasswordInitiateResponseDto } from "./dto/reset-password-initiate.dto";
+import { ResetPasswordVerifyOtpDto, ResetPasswordVerifyOtpResponseDto } from "./dto/reset-password-verify-otp.dto";
+import { ResetPasswordSubmitDto, ResetPasswordSubmitResponseDto } from "./dto/reset-password-submit.dto";
+import {LogoutResponseDto} from "./dto/logout.dto";
+import {TokensResponseDto} from "./dto/tokens-response.dto";
 
 @ApiTags("Authentication")
 @Controller("auth")
@@ -155,5 +153,55 @@ export class AuthController {
   })
   getProfile(@Req() req): UserProfileDto {
     return req.user;
+  }
+
+  @Post("reset-password-initiate")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Initiate password reset by sending OTP" })
+  @ApiResponse({
+    status: 200,
+    description: "Password reset email sent",
+    type: ResetPasswordInitiateResponseDto
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 400, description: "OTP already sent or Facebook user" })
+  async resetPasswordInitiate(@Body() resetPasswordInitiateDto: ResetPasswordInitiateDto) {
+    return this.authService.initiatePasswordReset(resetPasswordInitiateDto.email);
+  }
+
+  @Post("reset-password-verify-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify password reset OTP" })
+  @ApiResponse({
+    status: 200,
+    description: "OTP verified successfully",
+    type: ResetPasswordVerifyOtpResponseDto
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 400, description: "Invalid or expired OTP" })
+  async resetPasswordVerifyOtp(@Body() resetPasswordVerifyOtpDto: ResetPasswordVerifyOtpDto) {
+    return this.authService.verifyPasswordResetOtp(
+      resetPasswordVerifyOtpDto.email, 
+      resetPasswordVerifyOtpDto.otp
+    );
+  }
+
+  @UseGuards(EmailVerificationGuard)
+  @Post("reset-password-submit")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Reset password with verified email token" })
+  @ApiResponse({ 
+    status: 200, 
+    description: "Password reset successful",
+    type: ResetPasswordSubmitResponseDto
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 400, description: "Facebook user cannot reset password" })
+  @ApiResponse({ status: 401, description: "Invalid or expired verification token" })
+  async resetPasswordSubmit(@Body() resetPasswordSubmitDto: ResetPasswordSubmitDto) {
+    return this.authService.resetPassword(
+      resetPasswordSubmitDto.email, 
+      resetPasswordSubmitDto.password
+    );
   }
 }

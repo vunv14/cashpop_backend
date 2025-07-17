@@ -1,6 +1,7 @@
 import {
   Injectable,
   ConflictException,
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -82,5 +83,26 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     user.refreshToken = refreshToken;
     await this.usersRepository.save(user);
+  }
+
+  /**
+   * Update user's password
+   * @param email User's email
+   * @param newPassword New password
+   * @returns Updated user
+   */
+  async updatePassword(email: string, newPassword: string): Promise<User> {
+    const user = await this.findByEmail(email);
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Update password
+    user.password = newPassword;
+    
+    // Save user with updated password
+    // The password will be automatically hashed by the entity's BeforeUpdate hook
+    return this.usersRepository.save(user);
   }
 }

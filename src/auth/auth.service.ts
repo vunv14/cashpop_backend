@@ -8,7 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { UsersService } from "../users/users.service";
 import { CreateUserDto } from "../users/dto/create-user.dto";
-import { ValkeyService } from "../services/valkey.service";
+import { ValkeyService, OtpType } from "../services/valkey.service";
 import { MailerService } from "../services/mailer.service";
 import { TokenService } from "./token.service";
 
@@ -183,7 +183,7 @@ export class AuthService {
     }
 
     // Check if OTP already exists for this email
-    const existingOtp = await this.valkeyService.getOtp(email);
+    const existingOtp = await this.valkeyService.getOtp(email, OtpType.REGISTRATION);
     if (existingOtp) {
       throw new BadRequestException("OTP already sent to this email address. Please check your inbox or try again after 5 minutes.");
     }
@@ -192,7 +192,7 @@ export class AuthService {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Store OTP in Valkey (with 5 minutes TTL as configured in ValkeyService)
-    await this.valkeyService.storeOtp(email, otp);
+    await this.valkeyService.storeOtp(email, otp, OtpType.REGISTRATION);
 
     // Send OTP via email
     await this.mailerService.sendOtpEmail(email, otp);
@@ -210,7 +210,7 @@ export class AuthService {
    */
   async verifyEmailOtp(email: string, otp: string) {
     // Get stored OTP from Valkey
-    const storedOtpData = await this.valkeyService.getOtp(email);
+    const storedOtpData = await this.valkeyService.getOtp(email, OtpType.REGISTRATION);
 
     if (!storedOtpData) {
       throw new BadRequestException("OTP expired or not found");
@@ -228,6 +228,104 @@ export class AuthService {
       message: "Email verified successfully",
       verified: true,
       token,
+    };
+  }
+
+  /**
+   * Initiate password reset by sending OTP
+   * @param email Email address for password reset
+   * @returns Message indicating password reset email was sent
+   */
+  async initiatePasswordReset(email: string) {
+    // Check if user exists
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Check if user is a Facebook user
+    if (user.isFacebookUser) {
+      throw new BadRequestException("Facebook users cannot reset password. Please use Facebook login.");
+    }
+
+    // Check if OTP already exists for this email
+    const existingOtp = await this.valkeyService.getOtp(email, OtpType.PASSWORD_RESET);
+    if (existingOtp) {
+      throw new BadRequestException("OTP already sent to this email address. Please check your inbox or try again after 5 minutes.");
+    }
+
+    // Generate a random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP in Valkey (with 5 minutes TTL as configured in ValkeyService)
+    await this.valkeyService.storeOtp(email, otp, OtpType.PASSWORD_RESET);
+
+    // Send OTP via email
+    await this.mailerService.sendPasswordResetOtpEmail(email, otp);
+
+    return {
+      message: "Password reset email sent",
+    };
+  }
+
+  /**
+   * Verify password reset OTP
+   * @param email Email address for password reset
+   * @param otp One-time password
+   * @returns Verification status and token
+   */
+  async verifyPasswordResetOtp(email: string, otp: string) {
+    // Check if user exists
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Get stored OTP from Valkey
+    const storedOtpData = await this.valkeyService.getOtp(email, OtpType.PASSWORD_RESET);
+
+    if (!storedOtpData) {
+      throw new BadRequestException("OTP expired or not found");
+    }
+
+    // Check if OTP matches
+    if (storedOtpData.otp !== otp) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    // Generate a short-lived JWT token with email in payload
+    const token = await this.tokenService.generateEmailVerificationToken(email);
+
+    return {
+      message: "OTP verified successfully",
+      verified: true,
+      token,
+    };
+  }
+
+  /**
+   * Reset password after OTP verification
+   * @param email Email address of the user
+   * @param password New password
+   * @returns Message indicating password was reset successfully
+   */
+  async resetPassword(email: string, password: string) {
+    // Check if user exists
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Check if user is a Facebook user
+    if (user.isFacebookUser) {
+      throw new BadRequestException("Facebook users cannot reset password. Please use Facebook login.");
+    }
+
+    // Update user's password
+    await this.usersService.updatePassword(email, password);
+
+    return {
+      message: "Password reset successful",
     };
   }
 

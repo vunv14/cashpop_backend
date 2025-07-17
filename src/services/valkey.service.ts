@@ -2,6 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
+export enum OtpType {
+  REGISTRATION = 'registration',
+  PASSWORD_RESET = 'password_reset'
+}
+
 @Injectable()
 export class ValkeyService {
   private readonly client: Redis;
@@ -18,12 +23,13 @@ export class ValkeyService {
   }
 
   /**
-   * Store OTP for email verification
+   * Store OTP for email verification or password reset
    * @param email User's email
    * @param otp One-time password
+   * @param type Type of OTP (registration or password reset)
    */
-  async storeOtp(email: string, otp: string): Promise<void> {
-    const key = this.getOtpKey(email);
+  async storeOtp(email: string, otp: string, type: OtpType = OtpType.REGISTRATION): Promise<void> {
+    const key = this.getOtpKey(email, type);
     const value = JSON.stringify({
       otp,
       timestamp: Date.now(),
@@ -34,10 +40,11 @@ export class ValkeyService {
   /**
    * Get stored OTP for email
    * @param email User's email
+   * @param type Type of OTP (registration or password reset)
    * @returns OTP data or null if not found
    */
-  async getOtp(email: string): Promise<{ otp: string; timestamp: number } | null> {
-    const key = this.getOtpKey(email);
+  async getOtp(email: string, type: OtpType = OtpType.REGISTRATION): Promise<{ otp: string; timestamp: number } | null> {
+    const key = this.getOtpKey(email, type);
     const value = await this.client.get(key);
 
     if (!value) {
@@ -48,58 +55,12 @@ export class ValkeyService {
   }
 
   /**
-   * Delete OTP for email
-   * @param email User's email
-   */
-  async deleteOtp(email: string): Promise<void> {
-    const key = this.getOtpKey(email);
-    await this.client.del(key);
-  }
-
-  /**
-   * Mark email as verified
-   * @param email User's email
-   */
-  async markEmailAsVerified(email: string): Promise<void> {
-    const key = this.getVerifiedKey(email);
-    await this.client.set(key, 'true', 'EX', this.verifiedExpiry);
-  }
-
-  /**
-   * Check if email is verified
-   * @param email User's email
-   * @returns True if email is verified, false otherwise
-   */
-  async isEmailVerified(email: string): Promise<boolean> {
-    const key = this.getVerifiedKey(email);
-    const value = await this.client.get(key);
-    return value === 'true';
-  }
-
-  /**
-   * Delete verification status for email
-   * @param email User's email
-   */
-  async deleteVerificationStatus(email: string): Promise<void> {
-    const key = this.getVerifiedKey(email);
-    await this.client.del(key);
-  }
-
-  /**
    * Generate OTP key for email
    * @param email User's email
+   * @param type Type of OTP (registration or password reset)
    * @returns OTP key
    */
-  private getOtpKey(email: string): string {
-    return `otp:${email}`;
-  }
-
-  /**
-   * Generate verified key for email
-   * @param email User's email
-   * @returns Verified key
-   */
-  private getVerifiedKey(email: string): string {
-    return `verified:${email}`;
+  private getOtpKey(email: string, type: OtpType = OtpType.REGISTRATION): string {
+    return `otp:${type}:${email}`;
   }
 }

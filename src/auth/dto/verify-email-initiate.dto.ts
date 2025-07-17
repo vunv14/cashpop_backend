@@ -10,3 +10,11 @@ export class VerifyEmailInitiateDto {
   @IsNotEmpty({ message: 'Email is required' })
   email: string;
 }
+
+export class VerifyEmailInitiateResponseDto {
+  @ApiProperty({
+    description: 'Status message',
+    example: 'Verification email sent',
+  })
+  message: string;
+}

@@ -50,8 +50,31 @@ export class MailerService {
         <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
           <strong>${otp}</strong>
         </div>
-        <p>This code will expire in 10 minutes.</p>
+        <p>This code will expire in 5 minutes.</p>
         <p>If you didn't request this code, please ignore this email.</p>
+      </div>
+    `;
+
+    return this.sendMail(to, subject, html);
+  }
+
+  /**
+   * Send password reset OTP email
+   * @param to Recipient email address
+   * @param otp One-time password
+   * @returns Information about the sent email
+   */
+  async sendPasswordResetOtpEmail(to: string, otp: string): Promise<any> {
+    const subject = 'Password Reset Code';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Password Reset</h2>
+        <p>You requested to reset your password. Please use the following code to verify your identity:</p>
+        <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
+          <strong>${otp}</strong>
+        </div>
+        <p>This code will expire in 5 minutes.</p>
+        <p>If you didn't request to reset your password, please ignore this email and ensure your account is secure.</p>
       </div>
     `;
 
