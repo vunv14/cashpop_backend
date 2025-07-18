@@ -30,6 +30,8 @@ import { VerifyEmailOtpDto, VerifyEmailOtpResponseDto } from "./dto/verify-email
 import { ResetPasswordInitiateDto, ResetPasswordInitiateResponseDto } from "./dto/reset-password-initiate.dto";
 import { ResetPasswordVerifyOtpDto, ResetPasswordVerifyOtpResponseDto } from "./dto/reset-password-verify-otp.dto";
 import { ResetPasswordSubmitDto, ResetPasswordSubmitResponseDto } from "./dto/reset-password-submit.dto";
+import { FindUsernameInitiateDto, FindUsernameInitiateResponseDto } from "./dto/find-username-initiate.dto";
+import { FindUsernameVerifyOtpDto, FindUsernameVerifyOtpResponseDto } from "./dto/find-username-verify-otp.dto";
 import {LogoutResponseDto} from "./dto/logout.dto";
 import {TokensResponseDto} from "./dto/tokens-response.dto";
 
@@ -202,6 +204,37 @@ export class AuthController {
     return this.authService.resetPassword(
       resetPasswordSubmitDto.email, 
       resetPasswordSubmitDto.password
+    );
+  }
+
+  @Post("find-username-initiate")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Initiate find username by sending OTP" })
+  @ApiResponse({
+    status: 200,
+    description: "Find username email sent",
+    type: FindUsernameInitiateResponseDto
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 400, description: "OTP already sent" })
+  async findUsernameInitiate(@Body() findUsernameInitiateDto: FindUsernameInitiateDto) {
+    return this.authService.initiateFindUsername(findUsernameInitiateDto.email);
+  }
+
+  @Post("find-username-verify-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify OTP and return username" })
+  @ApiResponse({
+    status: 200,
+    description: "Username found successfully",
+    type: FindUsernameVerifyOtpResponseDto
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 400, description: "Invalid or expired OTP" })
+  async findUsernameVerifyOtp(@Body() findUsernameVerifyOtpDto: FindUsernameVerifyOtpDto) {
+    return this.authService.verifyFindUsernameOtp(
+      findUsernameVerifyOtpDto.email, 
+      findUsernameVerifyOtpDto.otp
     );
   }
 }

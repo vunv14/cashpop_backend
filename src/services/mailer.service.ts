@@ -80,4 +80,27 @@ export class MailerService {
 
     return this.sendMail(to, subject, html);
   }
+
+  /**
+   * Send find username OTP email
+   * @param to Recipient email address
+   * @param otp One-time password
+   * @returns Information about the sent email
+   */
+  async sendFindUsernameOtpEmail(to: string, otp: string): Promise<any> {
+    const subject = 'Find Your Username Code';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Find Your Username</h2>
+        <p>You requested to find your username. Please use the following code to verify your identity:</p>
+        <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
+          <strong>${otp}</strong>
+        </div>
+        <p>This code will expire in 5 minutes.</p>
+        <p>If you didn't request to find your username, please ignore this email.</p>
+      </div>
+    `;
+
+    return this.sendMail(to, subject, html);
+  }
 }

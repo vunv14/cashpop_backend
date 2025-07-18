@@ -21,6 +21,11 @@ export class AuthService {
     private tokenService: TokenService
   ) {}
 
+  private generateOtp() {
+    // Generate a random 6-digit OTP
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.usersService.findByUsername(username);
     if (user && (await user.validatePassword(password))) {
@@ -188,11 +193,10 @@ export class AuthService {
       throw new BadRequestException("OTP already sent to this email address. Please check your inbox or try again after 5 minutes.");
     }
 
-    // Generate a random 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = this.generateOtp();
 
     // Store OTP in Valkey (with 5 minutes TTL as configured in ValkeyService)
-    await this.valkeyService.storeOtp(email, otp, OtpType.REGISTRATION);
+    await this.valkeyService.storeOtp(email, otp, OtpType.REGISTRATION, 5 * 60);
 
     // Send OTP via email
     await this.mailerService.sendOtpEmail(email, otp);
@@ -254,11 +258,10 @@ export class AuthService {
       throw new BadRequestException("OTP already sent to this email address. Please check your inbox or try again after 5 minutes.");
     }
 
-    // Generate a random 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = this.generateOtp()
 
     // Store OTP in Valkey (with 5 minutes TTL as configured in ValkeyService)
-    await this.valkeyService.storeOtp(email, otp, OtpType.PASSWORD_RESET);
+    await this.valkeyService.storeOtp(email, otp, OtpType.PASSWORD_RESET, 5 * 60);
 
     // Send OTP via email
     await this.mailerService.sendPasswordResetOtpEmail(email, otp);
@@ -326,6 +329,68 @@ export class AuthService {
 
     return {
       message: "Password reset successful",
+    };
+  }
+
+  /**
+   * Initiate find username by sending OTP
+   * @param email Email address to find username for
+   * @returns Message indicating find username email was sent
+   */
+  async initiateFindUsername(email: string) {
+    // Check if user exists
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.username) {
+      throw new NotFoundException("Username not found for this email address.");
+    }
+
+    // Check if OTP already exists for this email
+    const existingOtp = await this.valkeyService.getOtp(email, OtpType.FIND_USERNAME);
+    if (existingOtp) {
+      throw new BadRequestException("OTP already sent to this email address. Please check your inbox or try again after 5 minutes.");
+    }
+    const otp = this.generateOtp();
+
+    // Store OTP in Valkey (with 5 minutes TTL as configured in ValkeyService)
+    await this.valkeyService.storeOtp(email, otp, OtpType.FIND_USERNAME, 5 * 60);
+
+    // Send OTP via email
+    await this.mailerService.sendFindUsernameOtpEmail(email, otp);
+
+    return {
+      message: "Find username email sent",
+    };
+  }
+
+  /**
+   * Verify OTP and return username
+   * @param email Email address to find username for
+   * @param otp One-time password
+   * @returns Username associated with the email
+   */
+  async verifyFindUsernameOtp(email: string, otp: string) {
+    // Check if user exists
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.username) {
+      throw new NotFoundException("Username not found for this email address.");
+    }
+
+    // Get stored OTP from Valkey
+    const storedOtpData = await this.valkeyService.getOtp(email, OtpType.FIND_USERNAME);
+
+    if (!storedOtpData) {
+      throw new BadRequestException("OTP expired or not found");
+    }
+
+    // Check if OTP matches
+    if (storedOtpData.otp !== otp) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    return {
+      message: "Username found successfully",
+      verified: true,
+      username: user.username,
     };
   }
 

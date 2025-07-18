@@ -6,6 +6,7 @@ A NestJS backend service with PostgreSQL, PassportJS, and Swagger.
 
 - User authentication (register, login, logout)
 - Password reset with email verification
+- Find username with email verification
 - JWT access and refresh tokens
 - Facebook social login
 - RESTful API with Swagger documentation
@@ -169,6 +170,24 @@ POST /auth/reset-password-submit
 ```
 
 For detailed information about the password reset flow, request/response examples, and error handling, see [RESET_PASSWORD_USAGE.md](RESET_PASSWORD_USAGE.md).
+
+### Find Username
+
+The find username flow consists of two steps:
+
+1. Initiate find username:
+```
+POST /auth/find-username-initiate
+```
+
+2. Verify OTP and get username:
+```
+POST /auth/find-username-verify-otp
+```
+
+This flow is similar to the password reset flow, but instead of resetting the password, it returns the username associated with the email address after successful OTP verification.
+
+For detailed information about the find username flow, request/response examples, and error handling, see [FIND_USERNAME_USAGE.md](FIND_USERNAME_USAGE.md).
 
 ## Deployment
 

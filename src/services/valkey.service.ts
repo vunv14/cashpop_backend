@@ -4,14 +4,14 @@ import Redis from 'ioredis';
 
 export enum OtpType {
   REGISTRATION = 'registration',
-  PASSWORD_RESET = 'password_reset'
+  PASSWORD_RESET = 'password_reset',
+  FIND_USERNAME = 'find_username'
 }
 
 @Injectable()
 export class ValkeyService {
   private readonly client: Redis;
-  private readonly otpExpiry: number = 5 * 60; // 5 minutes in seconds
-  private readonly verifiedExpiry: number = 30 * 60; // 30 minutes in seconds
+  private readonly defaultOtpExpiry: number = 5 * 60; // 5 minutes in seconds
 
   constructor(private configService: ConfigService) {
     this.client = new Redis({
@@ -27,14 +27,15 @@ export class ValkeyService {
    * @param email User's email
    * @param otp One-time password
    * @param type Type of OTP (registration or password reset)
+   * @param otpExpiry Expiry time
    */
-  async storeOtp(email: string, otp: string, type: OtpType = OtpType.REGISTRATION): Promise<void> {
+  async storeOtp(email: string, otp: string, type: OtpType = OtpType.REGISTRATION, otpExpiry = this.defaultOtpExpiry): Promise<void> {
     const key = this.getOtpKey(email, type);
     const value = JSON.stringify({
       otp,
       timestamp: Date.now(),
     });
-    await this.client.set(key, value, 'EX', this.otpExpiry);
+    await this.client.set(key, value, 'EX', otpExpiry);
   }
 
   /**
