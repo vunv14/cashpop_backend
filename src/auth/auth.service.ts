@@ -22,8 +22,8 @@ export class AuthService {
   ) {}
 
   private generateOtp() {
-    // Generate a random 6-digit OTP
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate a random 4-digit OTP
+    return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
   async validateUser(username: string, password: string): Promise<any> {
