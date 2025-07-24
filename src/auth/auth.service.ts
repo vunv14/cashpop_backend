@@ -54,6 +54,7 @@ export class AuthService {
         id: user.id,
         username: user.username,
         email: user.email,
+        name: user.name,
       },
       ...tokens,
     };
@@ -77,6 +78,7 @@ export class AuthService {
       const user = await this.usersService.create({
         email: createUserDto.email,
         username: createUserDto.username,
+        name: createUserDto.name,
         password: createUserDto.password,
         refreshToken,
       });
@@ -89,6 +91,7 @@ export class AuthService {
           id: user.id,
           username: user.username,
           email: user.email,
+          name: user.name,
         },
         refreshToken,
         accessToken,
@@ -170,6 +173,7 @@ export class AuthService {
         id: user.id,
         username: user.username,
         email: user.email,
+        name: user.name,
       },
       ...tokens,
     };

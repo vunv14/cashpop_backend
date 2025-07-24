@@ -14,6 +14,12 @@ export class UserProfileDto {
   username: string;
 
   @ApiProperty({
+    description: "The full name of the user",
+    example: "John Doe",
+  })
+  name: string;
+
+  @ApiProperty({
     description: "The email address of the user",
     example: "user@example.com",
   })

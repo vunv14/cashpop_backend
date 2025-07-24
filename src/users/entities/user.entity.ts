@@ -24,6 +24,10 @@ export class User {
   @ApiProperty({ description: "The username of the user" })
   username: string;
 
+  @Column({ nullable: false })
+  @ApiProperty({ description: "The full name of the user" })
+  name: string;
+
   @Column({ nullable: true })
   @Exclude()
   password: string;

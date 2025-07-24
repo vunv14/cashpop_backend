@@ -10,6 +10,14 @@ export class CreateUserDto {
   @IsNotEmpty({ message: "Username is required" })
   @MinLength(3, { message: "Username must be at least 3 characters long" })
   username: string;
+  
+  @ApiProperty({
+    description: "The full name of the user",
+    example: "John Doe",
+  })
+  @IsString()
+  @IsNotEmpty({ message: "Name is required" })
+  name: string;
 
   @ApiProperty({
     description: "The email address of the user",

@@ -8,6 +8,18 @@ export class UserResponseDto {
   id: string;
 
   @ApiProperty({
+    description: "The username of the user",
+    example: "johndoe",
+  })
+  username: string;
+
+  @ApiProperty({
+    description: "The full name of the user",
+    example: "John Doe",
+  })
+  name: string;
+
+  @ApiProperty({
     description: "The email address of the user",
     example: "user@example.com",
   })
