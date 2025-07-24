@@ -25,7 +25,7 @@ export class User {
   username: string;
 
   @Column({ nullable: false })
-  @ApiProperty({ description: "The full name of the user" })
+  @ApiProperty({ description: "The full name of the user", maxLength: 50 })
   name: string;
 
   @Column({ nullable: true })
@@ -46,6 +46,30 @@ export class User {
   @ApiProperty({ description: "The refresh token for JWT authentication" })
   @Exclude()
   refreshToken: string;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The avatar URL of the user" })
+  avatar: string;
+  
+  @Column({ nullable: true, type: 'float' })
+  @ApiProperty({ description: "The height of the user in cm" })
+  height: number;
+  
+  @Column({ nullable: true, type: 'float' })
+  @ApiProperty({ description: "The weight of the user in kg" })
+  weight: number;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The sex of the user (male/female/other)" })
+  sex: string;
+  
+  @Column({ nullable: true, type: 'date' })
+  @ApiProperty({ description: "The date of birth of the user" })
+  dateOfBirth: Date;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The residential area of the user" })
+  residentialArea: string;
 
   @CreateDateColumn()
   @ApiProperty({ description: "The date when the user was created" })

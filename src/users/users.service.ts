@@ -7,12 +7,17 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "./entities/user.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { ProfileResponseDto } from "./dto/profile-response.dto";
+import { plainToInstance } from "class-transformer";
+import { FileUploadService } from "../file-upload/file-upload.service";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>
+    private usersRepository: Repository<User>,
+    private readonly fileUploadService: FileUploadService
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -104,5 +109,59 @@ export class UsersService {
     // Save user with updated password
     // The password will be automatically hashed by the entity's BeforeUpdate hook
     return this.usersRepository.save(user);
+  }
+
+  /**
+   * Update user's profile
+   * @param userId User's ID
+   * @param updateProfileDto Profile data to update
+   * @param file Optional avatar file to upload
+   * @returns Updated user profile
+   */
+  async updateProfile(
+    userId: string, 
+    updateProfileDto: UpdateProfileDto,
+    file?: Express.Multer.File
+  ): Promise<ProfileResponseDto> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // If file is provided, upload it and update the avatar URL
+    if (file) {
+      const avatarUrl = await this.fileUploadService.uploadFile(file, 'avatars');
+      updateProfileDto.avatar = avatarUrl;
+    }
+
+    // Update only the fields that are provided
+    Object.keys(updateProfileDto).forEach(key => {
+      if (updateProfileDto[key] !== undefined) {
+        user[key] = updateProfileDto[key];
+      }
+    });
+    
+    // Save the updated user
+    const updatedUser = await this.usersRepository.save(user);
+    
+    // Transform to ProfileResponseDto to exclude sensitive data
+    return plainToInstance(ProfileResponseDto, updatedUser);
+  }
+
+  /**
+   * Get user's profile
+   * @param userId User's ID
+   * @returns User profile
+   */
+  async getProfile(userId: string): Promise<ProfileResponseDto> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    // Transform to ProfileResponseDto to exclude sensitive data
+    return plainToInstance(ProfileResponseDto, user);
   }
 }
