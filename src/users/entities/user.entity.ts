@@ -127,10 +127,12 @@ export class User {
    * Validates a refresh token against the stored hash and checks if it has expired
    * @param refreshToken The refresh token to validate
    * @param refreshExpSec The expiration time in seconds (provided by AuthService from ConfigService)
-   * @returns True if the token is valid and not expired, false otherwise
+   * @returns Object with status and isValid flag. Status can be 'valid', 'expired', or 'invalid'
    */
-  async validateRefreshToken(refreshToken: string, refreshExpSec?: number): Promise<boolean> {
-    if (!this.refreshToken || !this.refreshTokenCreatedAt) return false;
+  async validateRefreshToken(refreshToken: string, refreshExpSec?: number): Promise<{ status: 'valid' | 'expired' | 'invalid', isValid: boolean }> {
+    if (!this.refreshToken || !this.refreshTokenCreatedAt) {
+      return { status: 'invalid', isValid: false };
+    }
     
     // Use provided expiration time or default to 7 days (604800 seconds)
     const expirationSeconds = refreshExpSec || 604800;
@@ -142,11 +144,15 @@ export class User {
     
     if (now > expirationDate) {
       // Token has expired
-      return false;
+      return { status: 'expired', isValid: false };
     }
     
     // Token hasn't expired, validate it
-    return bcrypt.compare(refreshToken, this.refreshToken);
+    const isValid = await bcrypt.compare(refreshToken, this.refreshToken);
+    return { 
+      status: isValid ? 'valid' : 'invalid', 
+      isValid 
+    };
   }
 
   // Hook to capture the original value after loading

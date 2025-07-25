@@ -40,20 +40,25 @@ export class AuthService {
    * Validates a refresh token for a user
    * @param username The username of the user
    * @param refreshToken The refresh token to validate
-   * @returns The user object without sensitive data if validation succeeds, null otherwise
+   * @returns Object with user data and validation status, or null if user not found
    */
-  async validateRefreshToken(username: string, refreshToken: string): Promise<any> {
+  async validateRefreshToken(username: string, refreshToken: string): Promise<{ user: any, status: string } | null> {
       const user = await this.usersService.findByUsername(username);
+      if (!user) return null;
       
       // Get refresh token expiration time from ConfigService
       const refreshExpSec = this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_IN_SEC', 604800);
       
       // Pass the expiration time to the User entity's validateRefreshToken method
-      if (user && (await user.validateRefreshToken(refreshToken, refreshExpSec))) {
+      const validationResult = await user.validateRefreshToken(refreshToken, refreshExpSec);
+      
+      if (validationResult.isValid) {
           const { password, refreshToken, ...result } = user;
-          return result;
+          return { user: result, status: 'valid' };
       }
-      return null;
+      
+      // Return the validation status even if the token is invalid
+      return { user: null, status: validationResult.status };
   }
 
   async login(user: any) {
