@@ -12,6 +12,7 @@ export enum OtpType {
 export class ValkeyService {
   private readonly client: Redis;
   private readonly defaultOtpExpiry: number = 5 * 60; // 5 minutes in seconds
+  private readonly defaultNonceExpiry: number = 5 * 60; // 5 minutes in seconds
 
   constructor(private configService: ConfigService) {
     this.client = new Redis({
@@ -63,5 +64,90 @@ export class ValkeyService {
    */
   private getOtpKey(email: string, type: OtpType = OtpType.REGISTRATION): string {
     return `otp:${type}:${email}`;
+  }
+
+  /**
+   * Store attestation nonce for a user
+   * @param userId User's ID
+   * @param nonce Attestation nonce value
+   * @param expiryInSeconds Expiry time in seconds (default: 5 minutes)
+   * @returns Expiration date
+   */
+  async storeAttestationNonce(userId: string, nonce: string, expiryInSeconds = this.defaultNonceExpiry): Promise<Date> {
+    const key = this.getAttestationNonceKey(userId, nonce);
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + expiryInSeconds);
+    
+    const value = JSON.stringify({
+      userId,
+      nonce,
+      expiresAt: expiresAt.toISOString(),
+      used: false,
+    });
+    
+    await this.client.set(key, value, 'EX', expiryInSeconds);
+    return expiresAt;
+  }
+
+  /**
+   * Get attestation nonce data
+   * @param userId User's ID
+   * @param nonce Attestation nonce value
+   * @returns Nonce data or null if not found
+   */
+  async getAttestationNonce(userId: string, nonce: string): Promise<{ userId: string; nonce: string; expiresAt: string; used: boolean } | null> {
+    const key = this.getAttestationNonceKey(userId, nonce);
+    const value = await this.client.get(key);
+
+    if (!value) {
+      return null;
+    }
+
+    return JSON.parse(value);
+  }
+
+  /**
+   * Validate and mark an attestation nonce as used
+   * @param userId User's ID
+   * @param nonce Attestation nonce value
+   * @returns true if successful, false otherwise
+   */
+  async validateAndUseAttestationNonce(userId: string, nonce: string): Promise<boolean> {
+    const key = this.getAttestationNonceKey(userId, nonce);
+    const value = await this.client.get(key);
+
+    if (!value) {
+      return false; // Nonce not found
+    }
+
+    const nonceData = JSON.parse(value);
+    
+    // Check if nonce is already used
+    if (nonceData.used) {
+      return false;
+    }
+    
+    // Check if nonce is expired
+    const expiresAt = new Date(nonceData.expiresAt);
+    const now = new Date();
+    if (now > expiresAt) {
+      return false;
+    }
+    
+    // Mark nonce as used
+    nonceData.used = true;
+    await this.client.set(key, JSON.stringify(nonceData), 'KEEPTTL');
+    
+    return true;
+  }
+
+  /**
+   * Generate attestation nonce key
+   * @param userId User's ID
+   * @param nonce Attestation nonce value
+   * @returns Attestation nonce key
+   */
+  private getAttestationNonceKey(userId: string, nonce: string): string {
+    return `attestation:nonce:${userId}:${nonce}`;
   }
 }
