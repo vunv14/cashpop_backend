@@ -48,6 +48,11 @@ export class User {
   refreshToken: string;
   
   @Column({ nullable: true })
+  @ApiProperty({ description: "The timestamp when the refresh token was created" })
+  @Exclude()
+  refreshTokenCreatedAt: Date;
+  
+  @Column({ nullable: true })
   @ApiProperty({ description: "The avatar URL of the user" })
   avatar: string;
   
@@ -118,8 +123,29 @@ export class User {
     }
   }
 
-  async validateRefreshToken(refreshToken: string): Promise<boolean> {
-    if (!this.refreshToken) return false;
+  /**
+   * Validates a refresh token against the stored hash and checks if it has expired
+   * @param refreshToken The refresh token to validate
+   * @param refreshExpSec The expiration time in seconds (provided by AuthService from ConfigService)
+   * @returns True if the token is valid and not expired, false otherwise
+   */
+  async validateRefreshToken(refreshToken: string, refreshExpSec?: number): Promise<boolean> {
+    if (!this.refreshToken || !this.refreshTokenCreatedAt) return false;
+    
+    // Use provided expiration time or default to 7 days (604800 seconds)
+    const expirationSeconds = refreshExpSec || 604800;
+    
+    // Check if the refresh token has expired
+    const now = new Date();
+    const expirationDate = new Date(this.refreshTokenCreatedAt);
+    expirationDate.setSeconds(expirationDate.getSeconds() + expirationSeconds);
+    
+    if (now > expirationDate) {
+      // Token has expired
+      return false;
+    }
+    
+    // Token hasn't expired, validate it
     return bcrypt.compare(refreshToken, this.refreshToken);
   }
 

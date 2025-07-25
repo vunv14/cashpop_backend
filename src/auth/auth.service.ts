@@ -18,7 +18,8 @@ export class AuthService {
     private usersService: UsersService,
     private valkeyService: ValkeyService,
     private mailerService: MailerService,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private configService: ConfigService
   ) {}
 
   private generateOtp() {
@@ -35,9 +36,20 @@ export class AuthService {
     return null;
   }
 
+  /**
+   * Validates a refresh token for a user
+   * @param username The username of the user
+   * @param refreshToken The refresh token to validate
+   * @returns The user object without sensitive data if validation succeeds, null otherwise
+   */
   async validateRefreshToken(username: string, refreshToken: string): Promise<any> {
       const user = await this.usersService.findByUsername(username);
-      if (user && (await user.validateRefreshToken(refreshToken))) {
+      
+      // Get refresh token expiration time from ConfigService
+      const refreshExpSec = this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_IN_SEC', 604800);
+      
+      // Pass the expiration time to the User entity's validateRefreshToken method
+      if (user && (await user.validateRefreshToken(refreshToken, refreshExpSec))) {
           const { password, refreshToken, ...result } = user;
           return result;
       }

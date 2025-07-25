@@ -18,6 +18,7 @@ import { TokenService } from "./token.service";
     UsersModule,
     ServicesModule,
     PassportModule,
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

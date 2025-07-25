@@ -40,6 +40,12 @@ export class UsersService {
     }
 
     const user = this.usersRepository.create(createUserDto);
+    
+    // Set refreshTokenCreatedAt if a refresh token is provided
+    if (createUserDto.refreshToken) {
+      user.refreshTokenCreatedAt = new Date();
+    }
+    
     return this.usersRepository.save(user);
   }
 
@@ -87,6 +93,9 @@ export class UsersService {
   ): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     user.refreshToken = refreshToken;
+    // Set the refresh token creation timestamp when a new token is set
+    // Set to null when the refresh token is removed (during logout)
+    user.refreshTokenCreatedAt = refreshToken ? new Date() : null;
     await this.usersRepository.save(user);
   }
 
