@@ -29,11 +29,11 @@ export class HealthService {
     });
 
     if (existingRecord) {
-      // Update existing record by adding new values
-      existingRecord.steps += createHealthDataDto.steps;
-      existingRecord.duration += createHealthDataDto.duration;
-      existingRecord.calories += createHealthDataDto.calories;
-      existingRecord.distance += createHealthDataDto.distance;
+      // Update existing record
+      existingRecord.steps = createHealthDataDto.steps;
+      existingRecord.duration = createHealthDataDto.duration;
+      existingRecord.calories = createHealthDataDto.calories;
+      existingRecord.distance = createHealthDataDto.distance;
       
       return this.healthDataRepository.save(existingRecord);
     }
@@ -90,41 +90,6 @@ export class HealthService {
     return {
       items: groupedRecords,
       summary,
-    };
-  }
-
-  /**
-   * Get today's accumulated health data for a user
-   */
-  async getTodayData(userId: string): Promise<TodayHealthDataDto> {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const record = await this.healthDataRepository.findOne({
-      where: {
-        userId,
-        date: today,
-      },
-    });
-
-    if (!record) {
-      // Return zeros if no data for today
-      return {
-        date: today,
-        steps: 0,
-        duration: 0,
-        calories: 0,
-        distance: 0,
-        lastUpdated: new Date(),
-      };
-    }
-
-    return {
-      date: record.date,
-      steps: record.steps,
-      duration: record.duration,
-      calories: record.calories,
-      distance: record.distance,
-      lastUpdated: record.updatedAt,
     };
   }
 

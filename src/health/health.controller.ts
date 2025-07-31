@@ -124,17 +124,6 @@ export class HealthController {
     return this.healthService.getStatistics(req.user.userId, query);
   }
 
-  @Get('today')
-  @ApiOperation({ summary: 'Get today\'s accumulated health data' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns today\'s accumulated health data',
-    type: TodayHealthDataDto,
-  })
-  async getTodayData(@Request() req) {
-    return this.healthService.getTodayData(req.user.userId);
-  }
-
   @Get('attestation-nonce')
   @ApiOperation({ summary: 'Get a new attestation nonce for device integrity verification' })
   @ApiResponse({
