@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -172,5 +173,26 @@ export class UsersService {
     
     // Transform to ProfileResponseDto to exclude sensitive data
     return plainToInstance(ProfileResponseDto, user);
+  }
+
+  /**
+   * Remove user account
+   * @param userId User's ID
+   * @returns True if the account was successfully removed
+   */
+  async removeAccount(userId: string): Promise<boolean> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    try {
+      // Delete the user from the database
+      await this.usersRepository.remove(user);
+      return true;
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to remove account');
+    }
   }
 }

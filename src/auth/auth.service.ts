@@ -415,4 +415,20 @@ export class AuthService {
     };
   }
 
+  /**
+   * Remove user account
+   * @param userId User's ID
+   * @returns Message indicating account was removed successfully
+   */
+  async removeAccount(userId: string) {
+    // Call the UsersService to remove the account
+    const success = await this.usersService.removeAccount(userId);
+    
+    if (success) {
+      return {
+        success: true,
+        message: "Account removed successfully"
+      };
+    }
+  }
 }
