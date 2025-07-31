@@ -4,6 +4,7 @@ import {
   Body,
   UseGuards,
   Get,
+  Delete,
   Req,
   HttpCode,
   HttpStatus,
@@ -236,5 +237,34 @@ export class AuthController {
       findUsernameVerifyOtpDto.email, 
       findUsernameVerifyOtpDto.otp
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete("account")
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Remove user account" })
+  @ApiResponse({ 
+    status: 200, 
+    description: "Account removed successfully",
+    schema: {
+      type: "object",
+      properties: {
+        success: {
+          type: "boolean",
+          example: true
+        },
+        message: {
+          type: "string",
+          example: "Account removed successfully"
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 500, description: "Internal server error" })
+  async removeAccount(@Req() req) {
+    return this.authService.removeAccount(req.user.userId);
   }
 }

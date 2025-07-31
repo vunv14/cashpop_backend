@@ -25,7 +25,7 @@ export class User {
   username: string;
 
   @Column({ nullable: false })
-  @ApiProperty({ description: "The full name of the user" })
+  @ApiProperty({ description: "The full name of the user", maxLength: 50 })
   name: string;
 
   @Column({ nullable: true })
@@ -46,6 +46,43 @@ export class User {
   @ApiProperty({ description: "The refresh token for JWT authentication" })
   @Exclude()
   refreshToken: string;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The timestamp when the refresh token was created" })
+  @Exclude()
+  refreshTokenCreatedAt: Date;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The avatar URL of the user" })
+  avatar: string;
+  
+  @Column({ nullable: true, type: 'float' })
+  @ApiProperty({ description: "The height of the user in cm" })
+  height: number;
+  
+  @Column({ nullable: true, type: 'float' })
+  @ApiProperty({ description: "The weight of the user in kg" })
+  weight: number;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The sex of the user (male/female/other)" })
+  sex: string;
+  
+  @Column({ nullable: true, type: 'date' })
+  @ApiProperty({ description: "The date of birth of the user" })
+  dateOfBirth: Date;
+  
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The residential area of the user" })
+  residentialArea: string;
+
+  @Column({ nullable: true, unique: true })
+  @ApiProperty({ description: "The invite code that can be shared with other users" })
+  inviteCode: string;
+
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The invite code used by this user during registration" })
+  invitedCode: string;
 
   @CreateDateColumn()
   @ApiProperty({ description: "The date when the user was created" })
@@ -94,9 +131,36 @@ export class User {
     }
   }
 
-  async validateRefreshToken(refreshToken: string): Promise<boolean> {
-    if (!this.refreshToken) return false;
-    return bcrypt.compare(refreshToken, this.refreshToken);
+  /**
+   * Validates a refresh token against the stored hash and checks if it has expired
+   * @param refreshToken The refresh token to validate
+   * @param refreshExpSec The expiration time in seconds (provided by AuthService from ConfigService)
+   * @returns Object with status and isValid flag. Status can be 'valid', 'expired', or 'invalid'
+   */
+  async validateRefreshToken(refreshToken: string, refreshExpSec?: number): Promise<{ status: 'valid' | 'expired' | 'invalid', isValid: boolean }> {
+    if (!this.refreshToken || !this.refreshTokenCreatedAt) {
+      return { status: 'invalid', isValid: false };
+    }
+    
+    // Use provided expiration time or default to 7 days (604800 seconds)
+    const expirationSeconds = refreshExpSec || 604800;
+    
+    // Check if the refresh token has expired
+    const now = new Date();
+    const expirationDate = new Date(this.refreshTokenCreatedAt);
+    expirationDate.setSeconds(expirationDate.getSeconds() + expirationSeconds);
+    
+    if (now > expirationDate) {
+      // Token has expired
+      return { status: 'expired', isValid: false };
+    }
+    
+    // Token hasn't expired, validate it
+    const isValid = await bcrypt.compare(refreshToken, this.refreshToken);
+    return { 
+      status: isValid ? 'valid' : 'invalid', 
+      isValid 
+    };
   }
 
   // Hook to capture the original value after loading

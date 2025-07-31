@@ -6,6 +6,7 @@ import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { ServicesModule } from "./services/services.module";
+import { FileUploadModule } from "./file-upload/file-upload.module";
 import { HealthModule } from "./health/health.module";
 
 @Module({
@@ -40,6 +41,7 @@ import { HealthModule } from "./health/health.module";
     AuthModule,
     UsersModule,
     ServicesModule,
+    FileUploadModule,
     HealthModule,
   ],
   controllers: [AppController],

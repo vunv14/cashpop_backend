@@ -15,10 +15,20 @@ export class RefreshStrategy extends PassportStrategy(Strategy, "refresh") {
   }
 
   async validate(username: string, refreshToken: string): Promise<any> {
-    const user = await this.authService.validateRefreshToken(username, refreshToken);
-    if (!user) {
+    const result = await this.authService.validateRefreshToken(username, refreshToken);
+    
+    if (!result) {
       throw new UnauthorizedException("Invalid refresh token");
     }
-    return user;
+    
+    if (result.status === 'expired') {
+      throw new UnauthorizedException("Token expired");
+    }
+    
+    if (result.status === 'invalid') {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+    
+    return result.user;
   }
 }
