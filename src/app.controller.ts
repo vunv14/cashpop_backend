@@ -8,7 +8,7 @@ import { HealthCheckResponseDto } from "./dto/health-check-response.dto";
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get("health")
+  @Get("/")
   @ApiOperation({ summary: "Health check endpoint" })
   @ApiResponse({
     status: 200,
