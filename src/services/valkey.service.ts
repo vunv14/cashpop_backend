@@ -90,55 +90,41 @@ export class ValkeyService {
   }
 
   /**
-   * Get attestation nonce data
-   * @param userId User's ID
-   * @param nonce Attestation nonce value
-   * @returns Nonce data or null if not found
-   */
-  async getAttestationNonce(userId: string, nonce: string): Promise<{ userId: string; nonce: string; expiresAt: string; used: boolean } | null> {
-    const key = this.getAttestationNonceKey(userId, nonce);
-    const value = await this.client.get(key);
-
-    if (!value) {
-      return null;
-    }
-
-    return JSON.parse(value);
-  }
-
-  /**
    * Validate and mark an attestation nonce as used
    * @param userId User's ID
    * @param nonce Attestation nonce value
-   * @returns true if successful, false otherwise
+   * @returns Object with isValid flag and nonceData if found
    */
-  async validateAndUseAttestationNonce(userId: string, nonce: string): Promise<boolean> {
+  async validateAndUseAttestationNonce(userId: string, nonce: string): Promise<{ 
+    isValid: boolean; 
+    nonceData?: { userId: string; nonce: string; expiresAt: string; used: boolean } 
+  }> {
     const key = this.getAttestationNonceKey(userId, nonce);
     const value = await this.client.get(key);
 
     if (!value) {
-      return false; // Nonce not found
+      return { isValid: false }; // Nonce not found
     }
 
     const nonceData = JSON.parse(value);
     
     // Check if nonce is already used
     if (nonceData.used) {
-      return false;
+      return { isValid: false, nonceData };
     }
     
     // Check if nonce is expired
     const expiresAt = new Date(nonceData.expiresAt);
     const now = new Date();
     if (now > expiresAt) {
-      return false;
+      return { isValid: false, nonceData };
     }
     
     // Mark nonce as used
     nonceData.used = true;
     await this.client.set(key, JSON.stringify(nonceData), 'KEEPTTL');
     
-    return true;
+    return { isValid: true, nonceData };
   }
 
   /**

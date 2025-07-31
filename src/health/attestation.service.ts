@@ -39,13 +39,10 @@ export class AttestationService {
    */
   async validateAndUseNonce(userId: string, nonceValue: string): Promise<boolean> {
     // Validate and mark the nonce as used in Valkey
-    const isValid = await this.valkeyService.validateAndUseAttestationNonce(userId, nonceValue);
+    const { isValid, nonceData } = await this.valkeyService.validateAndUseAttestationNonce(userId, nonceValue);
     
     // Check if nonce exists, is not used, and is not expired
     if (!isValid) {
-      // Get the nonce data to determine the specific error
-      const nonceData = await this.valkeyService.getAttestationNonce(userId, nonceValue);
-      
       if (!nonceData) {
         throw new BadRequestException('Invalid nonce');
       }
