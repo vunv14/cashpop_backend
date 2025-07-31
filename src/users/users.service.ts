@@ -40,14 +40,31 @@ export class UsersService {
       throw new ConflictException("Username already exists");
     }
 
+    // Try to save the user with a generated invite code
+    // If there's a collision, retry with a new code
+    const maxRetries = 5;
+    let retries = 0;
+
     const user = this.usersRepository.create(createUserDto);
-    
-    // Set refreshTokenCreatedAt if a refresh token is provided
-    if (createUserDto.refreshToken) {
-      user.refreshTokenCreatedAt = new Date();
+    while (retries < maxRetries) {
+      try {
+        // Generate a new invite code
+        user.inviteCode = this.generateInviteCode(10);
+        return await this.usersRepository.save(user);
+      } catch (error) {
+        // If it's a unique constraint error on invite_code, retry
+        if (error.code === '23505' && error.detail?.includes('invite_code')) {
+          retries++;
+          console.log(`Invite code collision detected, retrying (${retries}/${maxRetries})...`);
+        } else {
+          // For any other error, rethrow
+          throw error;
+        }
+      }
     }
     
-    return this.usersRepository.save(user);
+    // If we've exhausted all retries, throw an error
+    throw new InternalServerErrorException('Failed to create user with a unique invite code after multiple attempts');
   }
 
   async createFacebookUser(email: string, facebookId: string): Promise<User> {
@@ -194,5 +211,14 @@ export class UsersService {
     } catch (error) {
       throw new InternalServerErrorException('Failed to remove account');
     }
+  }
+
+  /**
+   * Generates an invite code
+   * @returns A random invite code
+   */
+  generateInviteCode(length: number): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   }
 }

@@ -97,7 +97,9 @@ export class AuthService {
         username: createUserDto.username,
         name: createUserDto.name,
         password: createUserDto.password,
+        invitedCode: createUserDto.invitedCode,
         refreshToken,
+        refreshTokenCreatedAt: new Date(),
       });
 
       // Generate tokens

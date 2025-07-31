@@ -76,6 +76,14 @@ export class User {
   @ApiProperty({ description: "The residential area of the user" })
   residentialArea: string;
 
+  @Column({ nullable: true, unique: true })
+  @ApiProperty({ description: "The invite code that can be shared with other users" })
+  inviteCode: string;
+
+  @Column({ nullable: true })
+  @ApiProperty({ description: "The invite code used by this user during registration" })
+  invitedCode: string;
+
   @CreateDateColumn()
   @ApiProperty({ description: "The date when the user was created" })
   createdAt: Date;

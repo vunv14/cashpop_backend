@@ -48,6 +48,10 @@ export class ProfileResponseDto {
   residentialArea: string;
 
   @Expose()
+  @ApiProperty({ description: "The invite code that can be shared with other users" })
+  inviteCode: string;
+
+  @Expose()
   @ApiProperty({ description: "The date when the user was created" })
   createdAt: Date;
 
