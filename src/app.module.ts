@@ -1,14 +1,14 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { ServicesModule } from "./services/services.module";
 import { FileUploadModule } from "./file-upload/file-upload.module";
 import { HealthModule } from "./health/health.module";
 import {PostArticleModule} from "./post/post.module";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 
 @Module({
   imports: [
@@ -30,7 +30,7 @@ import {PostArticleModule} from "./post/post.module";
         database: configService.get("DB_DATABASE", "cashpop"),
         entities: [__dirname + "/**/*.entity{.ts,.js}"],
         migrations: [__dirname + "/migrations/*{.ts,.js}"],
-        synchronize: false, // Disabled to use migrations
+        synchronize: true, // Disabled to use migrations
         ssl:
           configService.get("DB_SSL", "false") === "true"
             ? { rejectUnauthorized: false }

@@ -18,8 +18,8 @@ import {CreatePostDto} from "./dto/create-post.dto";
 import {PostArticleService} from "./post.service";
 import {FilesInterceptor} from '@nestjs/platform-express';
 
-@ApiTags('post')
-@Controller('post')
+@ApiTags('article')
+@Controller('article')
 export class PostArticleController {
     constructor(private readonly postArticleService: PostArticleService) {
     }
@@ -112,5 +112,22 @@ export class PostArticleController {
     @ApiResponse({ status: 404, description: 'article not found' })
     async getAllArticle(@Param("idUser") idUser: string) {
         return this.postArticleService.getData(idUser);
+    }
+
+
+    @UseGuards(JwtAuthGuard)
+    @Get("detail/:idArticle")
+    @ApiOperation({ summary: 'Get detail article' })
+    @ApiResponse({
+        status: 401,
+        description: "Unauthorized - User is not authenticated.",
+    })
+    @ApiResponse({
+        status: 400,
+        description: "Bad Request - Invalid input data.",
+    })
+    @ApiResponse({ status: 404, description: 'article not found' })
+    async getArticle(@Param("idArticle") idArticle: string) {
+        return this.postArticleService.detail(idArticle);
     }
 }

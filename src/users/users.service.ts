@@ -1,13 +1,12 @@
 import {ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException,} from "@nestjs/common";
-import {InjectRepository} from "@nestjs/typeorm";
-import {Repository} from "typeorm";
-import {AuthProvider, User} from "./entities/user.entity";
-import {CreateUserDto} from "./dto/create-user.dto";
-import {UpdateProfileDto} from "./dto/update-profile.dto";
-import {ProfileResponseDto} from "./dto/profile-response.dto";
-import {plainToInstance} from "class-transformer";
-import {FileUploadService} from "../file-upload/file-upload.service";
-
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { User, AuthProvider } from "./entities/user.entity";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { ProfileResponseDto } from "./dto/profile-response.dto";
+import { plainToInstance } from "class-transformer";
+import { FileUploadService } from "../file-upload/file-upload.service";
 
 @Injectable()
 export class UsersService {
@@ -144,11 +143,11 @@ export class UsersService {
   /**
    * Create a new user to log in with Google with email and googleId
    * @param email User's email from Google
-   * @param googleId User's Google ID
+   * @param providerId User's Google ID
    * @returns Promise returns the newly created user
    */
-  async createGoogleUser(email: string, googleId: string): Promise<User> {
-    this.logger.log(`Creating new Google user with email: ${email} and Google ID: ${googleId}`);
+  async createGoogleUser(email: string, providerId: string): Promise<User> {
+    this.logger.log(`Creating new Google user with email: ${email} and Google ID: ${providerId}`);
 
     // Check if the user with the given email already exists in the system
     await this.checkIfUserExists(email);
@@ -160,8 +159,8 @@ export class UsersService {
     const user = this.usersRepository.create({
       email,
       username,
-      googleId,
-      isGoogleUser: true,
+      providerId,
+      provider: AuthProvider.GOOGLE,
       name: username,
     });
 
@@ -172,12 +171,12 @@ export class UsersService {
   /**
    * Create a new user to log in with Apple with email and AppleId
    * @param email User's email from Apple
-   * @param appleId User's Apple ID
+   * @param providerId User's Apple ID
    * @returns Promise returns the newly created user
    */
-  async createAppleUser(email: string, appleId: string): Promise<User> {
+  async createAppleUser(email: string, providerId: string): Promise<User> {
 
-    this.logger.log(`Creating new Apple user with email: ${email} and Apple ID: ${appleId}`);
+    this.logger.log(`Creating new Apple user with email: ${email} and Apple ID: ${providerId}`);
 
     // Check if the user with the given email already exists in the system
     await this.checkIfUserExists(email);
@@ -189,8 +188,8 @@ export class UsersService {
     const user = this.usersRepository.create({
       email,
       username,
-      appleId,
-      isGoogleUser: true,
+      providerId,
+      provider: AuthProvider.APPLE,
       name: username,
     });
 

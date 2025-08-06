@@ -58,25 +58,25 @@ export class User {
   })
   providerId: string;
 
-  @Column({ default: false })
-  @ApiProperty({ description: "Whether the user is registered via Google" })
-  isGoogleUser: boolean;
+  // @Column({ default: false })
+  // @ApiProperty({ description: "Whether the user is registered via Google" })
+  // isGoogleUser: boolean;
+  //
+  // @Column({ nullable: true })
+  // @ApiProperty({
+  //   description: "The Google ID of the user if registered via Google",
+  // })
+  // googleId: string;
 
-  @Column({ nullable: true })
-  @ApiProperty({
-    description: "The Google ID of the user if registered via Google",
-  })
-  googleId: string;
-
-  @Column({ default: false })
-  @ApiProperty({ description: "Whether the user is registered via Apple" })
-  isAppleUser: boolean;
-
-  @Column({ nullable: true })
-  @ApiProperty({
-    description: "The Apple ID of the user if registered via Apple",
-  })
-  appleId: string;
+  // @Column({ default: false })
+  // @ApiProperty({ description: "Whether the user is registered via Apple" })
+  // isAppleUser: boolean;
+  //
+  // @Column({ nullable: true })
+  // @ApiProperty({
+  //   description: "The Apple ID of the user if registered via Apple",
+  // })
+  // appleId: string;
 
   @Column({ nullable: true })
   @ApiProperty({ description: "The refresh token for JWT authentication" })

@@ -1,18 +1,18 @@
 import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
   BadRequestException,
-  NotFoundException, Logger,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { UsersService } from "../users/users.service";
-import { CreateUserDto } from "../users/dto/create-user.dto";
-import { AuthProvider } from "../users/entities/user.entity";
-import { ValkeyService, OtpType } from "../services/valkey.service";
-import { MailerService } from "../services/mailer.service";
-import { TokenService } from "./token.service";
-import { access } from "fs";
+import {ConfigService} from "@nestjs/config";
+import {UsersService} from "../users/users.service";
+import {CreateUserDto} from "../users/dto/create-user.dto";
+import {AuthProvider} from "../users/entities/user.entity";
+import {OtpType, ValkeyService} from "../services/valkey.service";
+import {MailerService} from "../services/mailer.service";
+import {TokenService} from "./token.service";
 
 @Injectable()
 export class AuthService {
@@ -104,9 +104,9 @@ export class AuthService {
     if (!user) {
       user = await this.usersService.createGoogleUser(email, googleId)
     } else {
-      if (!user.isGoogleUser) {
+      if (user.provider !== AuthProvider.GOOGLE ) {
         throw new ConflictException(
-            "Email already registered with a different method"
+            "Email google already registered with a different method"
         );
       }
     }
@@ -149,9 +149,9 @@ export class AuthService {
       user = await this.usersService.createAppleUser(email, appleId)
       this.logger.log(`Created new Apple user with email: ${email} and Apple ID: ${appleId}`);
     } else {
-      if (!user.isAppleUser) {
+      if (user.provider !== AuthProvider.APPLE ) {
         throw new ConflictException(
-            "Email already registered with a different method"
+            "Email apple already registered with a different method"
         );
       }
     }

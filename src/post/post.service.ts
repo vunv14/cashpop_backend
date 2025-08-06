@@ -34,6 +34,22 @@ export class PostArticleService {
     }
 
     /**
+     * @param idArticle ID of the article to get
+     * @Returns a post object
+     */
+    async detail(idArticle: string) {
+        const post = await this.postRepository.findOne({
+            where:{id: idArticle}
+        });
+
+        if (!post) {
+            throw new NotFoundException(`Article with ID "${idArticle}" does not exist.`);
+        }
+
+        return post;
+    }
+
+    /**
      * create a new post
      * Creates a new post for a specific user.
      * @param idUser The unique identifier of the user who is creating the post.
