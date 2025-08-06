@@ -8,6 +8,7 @@ import { UsersModule } from "./users/users.module";
 import { ServicesModule } from "./services/services.module";
 import { FileUploadModule } from "./file-upload/file-upload.module";
 import { HealthModule } from "./health/health.module";
+import {PostArticleModule} from "./post/post.module";
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { HealthModule } from "./health/health.module";
     UsersModule,
     ServicesModule,
     FileUploadModule,
+    PostArticleModule,
     HealthModule,
   ],
   controllers: [AppController],
