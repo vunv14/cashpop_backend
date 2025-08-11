@@ -34,13 +34,13 @@ export class CreatePostDto {
     @IsNumber()
     @Min(-90)
     @Max(90)
-    latitude: number;
+    latitude?: number;
 
     @IsOptional()
     @ApiProperty({description: "Longitude of location", example: -74.0060})
     @IsNumber()
     @Min(-180)
     @Max(180)
-    longitude: number;
+    longitude?: number;
 
 }

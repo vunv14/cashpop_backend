@@ -7,6 +7,7 @@ import axios from "axios";
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     private readonly logger = new Logger(GoogleStrategy.name);
+
     constructor() {
         super()
     }
@@ -16,8 +17,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
      * @param req Google User
      */
     async validate(req: any): Promise<any> {
-        this.logger.log(`Received request in CustomGoogleStrategy.`);
-        const token = req.body?.access_token;
+        this.logger.log(`Received request in CustomGoogleStrategy. ${JSON.stringify(req.body)}`);
+        const token = req.body?.accessToken;
 
         if (!token) {
             this.logger.error('Google token is missing from request body.');
@@ -26,12 +27,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
         // Send token to Google for verification
         try {
+            this.logger.log("Đã chạy vào đây : ")
             const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-
+            this.logger.log(`Data call api token gg : ${JSON.stringify(response.data)}`)
             // Get user data from Google feedback
             const {email, sub: googleId, given_name: firstName, family_name: lastName, picture} = response.data;
 

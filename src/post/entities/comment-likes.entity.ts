@@ -6,7 +6,7 @@ import {PostArticle} from "./post-article.entity";
 import {Comments} from "./comments.entity";
 
 @Entity("comment_likes")
-export class CommentLikes extends BaseEntity{
+export class CommentLikesEntity extends BaseEntity{
 
     @ManyToOne(() => User, { onDelete: "CASCADE" })
     @JoinColumn({ name: "user_id" })
