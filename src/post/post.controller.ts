@@ -13,6 +13,7 @@ import {
     Put,
     Query,
     Request,
+    UploadedFile,
     UploadedFiles,
     UseGuards,
     UseInterceptors,
@@ -20,12 +21,15 @@ import {
 import {JwtAuthGuard} from "../auth/guards/jwt-auth.guard";
 import {CreatePostDto} from "./dto/create-post.dto";
 import {PostArticleService} from "./post.service";
-import {FilesInterceptor} from "@nestjs/platform-express";
+import {FileInterceptor, FilesInterceptor} from "@nestjs/platform-express";
 import {PostArticle} from "./entities/post-article.entity";
 import {ReactionDto} from "./dto/reaction.dto";
 import {CommentDto} from "./dto/comment.dto";
 import {CommentLikeDto} from "./dto/comment-like.dto";
 import {PaginationDto} from "../common/requestDto/pagination.dto";
+import {ReportPostDto} from "./dto/report-post.dto";
+import {ReportCommentDto} from "./dto/report-comment.dto";
+import {BlockCommentDto} from "./dto/block-comment.dto";
 
 @ApiTags("article")
 @Controller("article")
@@ -307,6 +311,7 @@ export class PostArticleController {
     @Put("like-comment")
     @UseGuards(JwtAuthGuard)
     @ApiOperation({summary: "Update like/unlike status for a comment "})
+    @ApiBody({type: CommentLikeDto})
     @ApiResponse({
         status: 200,
         description: "Comment on post deleted successfully",
@@ -322,6 +327,98 @@ export class PostArticleController {
     @ApiResponse({status: 404, description: "Url not found"})
     async updateLikeComment(@Body() commentLikeDto: CommentLikeDto) {
         return this.postArticleService.updateLikeComment(commentLikeDto);
+    }
+
+    // Api report
+
+    @Post("report-article")
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({summary: "Create an article report "})
+    @ApiBody({type: ReportPostDto})
+    @ApiConsumes("multipart/form-data")
+    @UseInterceptors(FileInterceptor("file"))
+    @ApiResponse({
+        status: 201,
+        description: "Create report article successfully",
+    })
+    @ApiResponse({
+        status: 401,
+        description: "Unauthorized - User is not authenticated.",
+    })
+    @ApiResponse({
+        status: 400,
+        description: "Bad Request - Invalid input data.",
+    })
+    @ApiResponse({status: 404, description: "Url not found"})
+    async createReportArticle(
+        @Body() reportPostDto: ReportPostDto,
+        @UploadedFile(
+            new ParseFilePipe({
+                validators: [
+                    new MaxFileSizeValidator({maxSize: 5 * 1024 * 1024}), // 5MB
+                    new FileTypeValidator({fileType: /(jpg|jpeg|png|gif|webp)$/}),
+                ],
+                fileIsRequired: false,
+            }),
+        )
+        file?: Express.Multer.File) {
+        return this.postArticleService.createReport(reportPostDto, file)
+    }
+
+    @Post("report-comment")
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({summary:"Create a comment report"})
+    @ApiBody({type: ReportCommentDto})
+    @ApiConsumes("multipart/form-data")
+    @UseInterceptors(FileInterceptor("file"))
+    @ApiResponse({
+        status: 201,
+        description: "Create report comment successfully",
+    })
+    @ApiResponse({
+        status: 401,
+        description: "Unauthorized - User is not authenticated.",
+    })
+    @ApiResponse({
+        status: 400,
+        description: "Bad Request - Invalid input data.",
+    })
+    @ApiResponse({status: 404, description: "Url not found"})
+    async createReportComment(@Body() reportCommentDto: ReportCommentDto,
+                              @UploadedFile(
+                                  new ParseFilePipe({
+                                      validators: [
+                                          new MaxFileSizeValidator({maxSize: 5 * 1024 * 1024}), // 5MB
+                                          new FileTypeValidator({fileType: /(jpg|jpeg|png|gif|webp)$/}),
+                                      ],
+                                      fileIsRequired: false,
+                                  }),
+                              )
+                              file?: Express.Multer.File) {
+        return this.postArticleService.createReportComment(reportCommentDto, file)
+    }
+
+    @Post("block-comment")
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiBody({type: BlockCommentDto})
+    @ApiResponse({
+        status: 201,
+        description: "Create block comment successfully",
+    })
+    @ApiResponse({
+        status: 401,
+        description: "Unauthorized - User is not authenticated.",
+    })
+    @ApiResponse({
+        status: 400,
+        description: "Bad Request - Invalid input data.",
+    })
+    @ApiResponse({status: 404, description: "Url not found"})
+    async crateBlockComment(@Body() blockCommentDto: BlockCommentDto) {
+        return this.postArticleService.createBlockComments(blockCommentDto);
     }
 
 }

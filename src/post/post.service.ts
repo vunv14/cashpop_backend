@@ -14,6 +14,13 @@ import {Comments} from "./entities/comments.entity";
 import {CommentLikeDto} from "./dto/comment-like.dto";
 import {CommentLikesEntity} from "./entities/comment-likes.entity";
 import {PaginatedResponse} from "../common/response/paginated-response";
+import {ReportPost} from "./entities/report-post.entity";
+import {ReportPostDto} from "./dto/report-post.dto";
+import {ReportReason} from "./entities/report-reason.entity";
+import {ReportComment} from "./entities/report-comment.entity";
+import {ReportCommentDto} from "./dto/report-comment.dto";
+import {BlockComments} from "./entities/block-comments.entity";
+import {BlockCommentDto} from "./dto/block-comment.dto";
 
 @Injectable()
 export class PostArticleService {
@@ -33,7 +40,15 @@ export class PostArticleService {
         @InjectRepository(Comments)
         private commentsRepository: Repository<Comments>,
         @InjectRepository(CommentLikesEntity)
-        private commentLikeRepository: Repository<CommentLikesEntity>
+        private commentLikeRepository: Repository<CommentLikesEntity>,
+        @InjectRepository(ReportPost)
+        private reportPostRepository: Repository<ReportPost>,
+        @InjectRepository(ReportReason)
+        private reportReasonRepository: Repository<ReportReason>,
+        @InjectRepository(ReportComment)
+        private reportCommentRepository: Repository<ReportComment>,
+        @InjectRepository(BlockComments)
+        private blockCommentsRepository: Repository<BlockComments>
     ) {
     }
 
@@ -332,10 +347,6 @@ export class PostArticleService {
         // Check if Article by ID is in data
         const article = await this.findArticleById(commentDto.idArticle)
 
-        // Convert contents array in commentDto to JSON string
-        const contentString = JSON.stringify(commentDto.contents);
-        this.logger.log(`The contents data has been converted to a JSON string: ${contentString}`)
-
         // If the image exists upload it to aws3 and save it to CreatePostDto
         if (files && files.length > 0) {
             const uploadedUrls = await this.uploadImage(files);
@@ -359,7 +370,7 @@ export class PostArticleService {
             const newComment = this.commentsRepository.create({
                 user: user,
                 postArticle: article,
-                content: contentString,
+                content: commentDto.contents,
                 mediaUrls: commentDto.mediaUrls,
                 parentComment: parentComment || null
             })
@@ -517,9 +528,133 @@ export class PostArticleService {
     }
 
     /**
+     * @Return Creates a new report for a given article.
+     * @param reportPostDto The DTO object contains the data required to generate the article report.
+     * @param files Files uploaded to attach to violation report
+     */
+    async createReport(reportPostDto: ReportPostDto, files?: Express.Multer.File): Promise<ApiResponse> {
+        this.logger.log(`Create report with data: ${JSON.stringify(reportPostDto)}, file : ${files}`);
+
+        // Simultaneously retrieve report reason, user, and article information
+        const [reportReason, user, article] = await Promise.all([
+            this.findReportReason(reportPostDto.idReportReason),
+            this.findUserById(reportPostDto.idUser),
+            this.findArticleById(reportPostDto.idArticle),
+        ]);
+
+        // upload to w3 and assign image path to article report
+        if (files) {
+            const urlImage = await this.fileUploadService.uploadFile(files, 'avatars')
+            this.logger.log(`Photo link to report violation of article: ${urlImage}`);
+            reportPostDto.imageUrl = urlImage
+        }
+
+        try {
+            // Create a new ReportPost instance with the article
+            const reportPost = this.reportPostRepository.create({
+                postArticle: article,
+                reportReason: reportReason,
+                user: user,
+                imageUrl: reportPostDto.imageUrl,
+                description: reportPostDto.description
+            });
+            this.logger.log(`Created ReportPost entity: ${JSON.stringify(reportPost)}`);
+
+            // save to database
+            await this.reportPostRepository.save(reportPost);
+            return ApiResponse.success(reportPost, 'Report article successful', HttpStatus.OK);
+
+        } catch (error) {
+            this.logger.error(`Error while creating report: ${error.message}`);
+            throw new InternalServerErrorException(`Failed to report article`)
+        }
+
+    }
+
+    /**
+     * @Return Create a violation report for a particular comment.
+     * @param reportCommentDto The DTO object contains the data needed to generate a violation report for the comment.
+     * @param file File uploaded to attach to violation report
+     */
+    async createReportComment(reportCommentDto: ReportCommentDto, file?: Express.Multer.File): Promise<ApiResponse> {
+        this.logger.log(`Create report comment with data: ${JSON.stringify(reportCommentDto)}`);
+
+        // Simultaneously retrieve report reason, user, and comment information
+        const [reportReason, user, comment] = await Promise.all([
+            this.findReportReason(reportCommentDto.idReportReason),
+            this.findUserById(reportCommentDto.idUser),
+            this.findCommentById(reportCommentDto.idComment),
+        ]);
+
+        // upload to w3 and assign image path to comment report
+        if (file) {
+            const urlImage = await this.fileUploadService.uploadFile(file, 'avatars')
+            this.logger.log(`Photo link to report violation of comment: ${urlImage}`);
+            reportCommentDto.imageUrl = urlImage
+        }
+
+        try {
+            // Create a new comment violation report
+            const reportComment = this.reportCommentRepository.create({
+                comments: comment,
+                reportReason: reportReason,
+                user: user,
+                imageUrl: reportCommentDto.imageUrl,
+                description: reportCommentDto.description
+            })
+
+            // save to report comment to db
+            await this.reportCommentRepository.save(reportComment)
+            return ApiResponse.success(reportComment, "Report comment successful", HttpStatus.CREATED)
+        } catch (error) {
+            this.logger.error(`Error while creating report: ${error.message}`);
+            throw new InternalServerErrorException(`Failed to report comment`)
+        }
+
+    }
+
+    /**
+     * @Return Blocked person, blocker and post information.
+     * @param blockCommentDto Data blocking comments in articles
+     */
+    async createBlockComments(blockCommentDto: BlockCommentDto): Promise<ApiResponse> {
+        this.logger.log(`Create block comment with data: ${JSON.stringify(blockCommentDto)}`);
+
+        // Simultaneously retrieve post data, blocked person information and blocker information
+        const [blockUser, blockByUser, article] = await Promise.all([
+            this.findUserById(blockCommentDto.idBlockUser),
+            this.findUserById(blockCommentDto.idBlockByUser),
+            this.findArticleById(blockCommentDto.idArticle)
+        ])
+        this.logger.log(`Loaded entities - blockUser: ${JSON.stringify(blockUser)}, 
+                                    blockByUser: ${JSON.stringify(blockByUser)}, 
+                                    article: ${JSON.stringify(article)}`);
+
+        try {
+
+            // Create new block comment user
+            const blockComments = this.blockCommentsRepository.create({
+                blockByUser: blockByUser,
+                blockUser: blockUser,
+                postArticle: article
+            })
+            this.logger.log(`Created blockComments entity: ${JSON.stringify(blockComments)}`);
+
+            // save to block comment to db
+            await this.blockCommentsRepository.save(blockComments)
+
+            return ApiResponse.success(blockComments, "This user's comment was blocked successfully.", HttpStatus.CREATED)
+        } catch (errors) {
+            this.logger.error(`Error blocking comment:`, errors)
+            throw new InternalServerErrorException("Error blocking this user comment")
+        }
+
+    }
+
+
+    /**
      * Create 1 string[] url image
      * @param files Optional image file to upload post article
-     * @private
      */
     private async uploadImage(files?: Express.Multer.File[]): Promise<string[]> {
         try {
@@ -540,31 +675,46 @@ export class PostArticleService {
      * @param idUser ID of the user to find.
      */
     private async findUserById(idUser: string): Promise<User> {
-        const user = this.userRepository.findOne({
-            where: {id: idUser}
-        });
-        if (!user) {
-            throw new NotFoundException(`User with ID ${idUser} not found`);
-        }
+        try {
+            const user = await this.userRepository.findOne({
+                where: {id: idUser},
+            });
 
-        this.logger.log(`User with ID ${idUser} : ${JSON.stringify(user)}`)
-        return user;
+            if (!user) {
+                this.logger.warn(`User with ID ${idUser} not found`);
+                throw new NotFoundException(`User with ID ${idUser} not found`);
+            }
+
+            this.logger.log(`User with ID ${idUser}: ${JSON.stringify(user)}`);
+            return user;
+        } catch (error) {
+            this.logger.error(`Error while finding user with ID ${idUser}: ${error.message}`);
+            throw new InternalServerErrorException('An error occurred while fetching the user');
+        }
     }
+
 
     /**
      * @Returns the PostArticle object corresponding to the ID.
      * @param idArticle ID of the article to find.
      */
     private async findArticleById(idArticle: string): Promise<PostArticle> {
-        const article = await this.postRepository.findOne({
-            where: {id: idArticle}
-        });
-        if (!article) {
-            throw new NotFoundException(`Article with ID ${idArticle} not found`);
-        }
+        try {
+            const article = await this.postRepository.findOne({
+                where: {id: idArticle},
+            });
 
-        this.logger.log(`Article with ID ${idArticle} : ${JSON.stringify(article)}`)
-        return article;
+            if (!article) {
+                this.logger.error(`Article with ID ${idArticle} not found`);
+                throw new NotFoundException(`Article with ID ${idArticle} not found`);
+            }
+
+            this.logger.log(`Article with ID ${idArticle}: ${JSON.stringify(article)}`);
+            return article;
+        } catch (error) {
+            this.logger.error(`Error while finding article with ID ${idArticle}: ${error.message}`);
+            throw new InternalServerErrorException('An error occurred while fetching the article');
+        }
     }
 
     /**
@@ -573,15 +723,46 @@ export class PostArticleService {
      * @Return the found Comment object.
      */
     private async findCommentById(idComment: string): Promise<Comments> {
-        const comment = await this.commentsRepository.findOne({
-            where: {id: idComment}
-        })
-        if (!comment) {
-            throw new NotFoundException(`Comment with ID ${idComment} not found`)
-        }
+        try {
+            const comment = await this.commentsRepository.findOne({
+                where: {id: idComment},
+            });
 
-        this.logger.log(`Comment with ID ${idComment} : ${JSON.stringify(comment)}`)
-        return comment;
+            if (!comment) {
+                this.logger.error(`Comment with ID ${idComment} not found`);
+                throw new NotFoundException(`Comment with ID ${idComment} not found`);
+            }
+
+            this.logger.log(`Comment with ID ${idComment}: ${JSON.stringify(comment)}`);
+            return comment;
+        } catch (error) {
+            this.logger.error(`Error while finding comment with ID ${idComment}: ${error.message}`);
+            throw new InternalServerErrorException('An error occurred while fetching the comment');
+        }
     }
+
+    /**
+     * @param idReportReason Find and return report reason by ID.
+     * @Return the found Comment object.
+     */
+    private async findReportReason(idReportReason: string): Promise<ReportReason> {
+        try {
+            const reportReason = await this.reportReasonRepository.findOne({
+                where: {id: idReportReason},
+            });
+
+            if (!reportReason) {
+                this.logger.error(`Report reason with ID ${idReportReason} not found`);
+                throw new NotFoundException(`Report reason with ID ${idReportReason} not found`);
+            }
+
+            this.logger.log(`Report reason with ID ${idReportReason}: ${JSON.stringify(reportReason)}`);
+            return reportReason;
+        } catch (error) {
+            this.logger.error(`Error while finding Report reason with ID ${idReportReason}: ${error.message}`);
+            throw new InternalServerErrorException('An error occurred while fetching the Report reason');
+        }
+    }
+
 
 }

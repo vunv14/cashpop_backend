@@ -8,7 +8,7 @@ export class PostArticle extends BaseEntity {
 
     @ManyToOne(() => User, {onDelete: "CASCADE"})
     @JoinColumn({name: "user_id"})
-    @ApiProperty({description: "The user associated with this health data"})
+    @ApiProperty({description: "Users related to the article"})
     user: User;
 
     @Column()
