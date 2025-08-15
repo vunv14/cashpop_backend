@@ -95,6 +95,13 @@ export class PostArticleService {
                     .from(Comments, 'comments')
                     .where('comments.postArticle = post_article.id');
             }, 'countComments')
+            .addSelect(sub => {
+                return sub.select('1')
+                    .from(PostLikes, 'pl')
+                    .where('pl.postArticle = post_article.id')
+                    .andWhere('pl.user = :currentUserId', { currentUserId: idUser })
+                    .limit(1);
+            }, 'isLiked')
             .where('users.id = :id', {id: idUser})
 
 
@@ -473,7 +480,7 @@ export class PostArticleService {
 
     /**
      * Handles like/unlike actions for a comment by a specific user.
-     * The function performs the following steps:
+     * The function performs the following steps:s
      * - Checks the existence of the user and comment based on the ID in `commentLikeDto`.
      * - Finds the existing like record of the user with that comment.
      * - If it has liked, delete the record (unlike).
@@ -763,6 +770,5 @@ export class PostArticleService {
             throw new InternalServerErrorException('An error occurred while fetching the Report reason');
         }
     }
-
 
 }
