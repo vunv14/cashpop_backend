@@ -4,7 +4,7 @@
   "description": "NestJS backend with PostgreSQL, PassportJS, and Swagger",
   "private": true,
   "scripts": {
-    "build": "node --max-old-space-size=512 node_modules/.bin/nest build",
+    "build": "node --max-old-space-size=512 ./node_modules/.bin/nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "npx @nestjs/cli start",
     "start:dev": "npx @nestjs/cli start --watch",
@@ -54,7 +54,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.0.0",
+    "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
     "@types/bcrypt": "^5.0.0",
