@@ -128,7 +128,9 @@ export class PostArticleController {
         status: 400,
         description: "Bad Request - Invalid input data.",
     })
+
     @ApiResponse({status: 404, description: "article not found"})
+    @ApiBearerAuth()
     async getAllArticle(@Query("idUser") idUser: string,
                         @Query() {page = 1, pageSize = 10}: PaginationDto) {
         return this.postArticleService.getDataArticle(idUser, page, pageSize);
@@ -145,6 +147,7 @@ export class PostArticleController {
         status: 400,
         description: "Bad Request - Invalid input data.",
     })
+    @ApiBearerAuth()
     @ApiResponse({status: 404, description: "article not found"})
     async getArticle(@Param("idArticle") idArticle: string) {
         return this.postArticleService.detail(idArticle);
@@ -153,6 +156,7 @@ export class PostArticleController {
 
     @Delete(":idArticle")
     @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @ApiOperation({summary: "Delete article by ID"})
     @ApiResponse({
         status: 200,
@@ -190,6 +194,7 @@ export class PostArticleController {
         description: "Update the like status success"
     })
     @ApiBody({type: ReactionDto})
+    @ApiBearerAuth()
     async updateLike(@Body() reactionDto: ReactionDto) {
         return this.postArticleService.updatePostlike(reactionDto)
     }
@@ -212,6 +217,7 @@ export class PostArticleController {
         description: "Update the like status success"
     })
     @ApiBody({type: ReactionDto})
+    @ApiBearerAuth()
     async createView(@Body() reactionDto: ReactionDto) {
         return this.postArticleService.createView(reactionDto)
     }
@@ -304,6 +310,7 @@ export class PostArticleController {
         description: "Bad Request - Invalid input data.",
     })
     @ApiResponse({status: 404, description: "Url not found"})
+    @ApiBearerAuth()
     async deleteComment(@Param("idComment") idComment: string) {
         return this.postArticleService.deleteComment(idComment);
     }
@@ -325,6 +332,7 @@ export class PostArticleController {
         description: "Bad Request - Invalid input data.",
     })
     @ApiResponse({status: 404, description: "Url not found"})
+    @ApiBearerAuth()
     async updateLikeComment(@Body() commentLikeDto: CommentLikeDto) {
         return this.postArticleService.updateLikeComment(commentLikeDto);
     }
