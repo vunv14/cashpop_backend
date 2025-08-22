@@ -23,15 +23,17 @@ export class PostArticle extends BaseEntity {
     @ApiProperty({description: "List of URLs of images or GIFs attached to the post"})
     mediaUrls: string[];
 
-    @ApiProperty({description: "Geographic longitude where the article was posted"})
+    @ApiProperty({ description: "Geographic longitude where the article was posted", example: 105.8342 })
     @Column({
-        nullable: true
+        type: 'double precision',
+        nullable: true,
     })
     longitude: number;
 
-    @ApiProperty({description: "Geographic latitude where the article was posted"})
+    @ApiProperty({ description: "Geographic latitude where the article was posted", example: 21.0278 })
     @Column({
-        nullable: true
+        type: 'double precision',
+        nullable: true,
     })
     latitude: number;
 }

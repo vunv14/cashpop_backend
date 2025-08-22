@@ -99,7 +99,7 @@ export class PostArticleService {
                 return sub.select('1')
                     .from(PostLikes, 'pl')
                     .where('pl.postArticle = post_article.id')
-                    .andWhere('pl.user = :currentUserId', { currentUserId: idUser })
+                    .andWhere('pl.user = :currentUserId', {currentUserId: idUser})
                     .limit(1);
             }, 'isLiked')
             .where('users.id = :id', {id: idUser})
@@ -170,8 +170,8 @@ export class PostArticleService {
             title: createDto.title,
             content: createDto.content,
             mediaUrls: createDto.mediaUrls,
-            longitude: createDto.longitude,
-            latitude: createDto.latitude,
+            longitude: Number(createDto.longitude),
+            latitude: Number(createDto.latitude),
             user: user
         })
         this.logger.log(`New post object created:  ${JSON.stringify(newPost)}`);
