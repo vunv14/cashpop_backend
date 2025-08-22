@@ -76,7 +76,8 @@ export class ChatService {
             .createQueryBuilder('message')
             .leftJoinAndSelect('message.sender', 'sender')
             .leftJoinAndSelect('message.receiver', 'receiver')
-            .where('(message.sender = :userIdSend AND message.receiver = :userIdReceive) OR (message.sender = :userIdReceive AND message.receiver = :userIdSend)',
+            .where('(message.sender = :userIdSend AND message.receiver = :userIdReceive) ' +
+                'OR (message.sender = :userIdReceive AND message.receiver = :userIdSend)',
                 {userIdSend, userIdReceive}
             )
 

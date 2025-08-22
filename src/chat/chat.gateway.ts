@@ -79,7 +79,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             });
             this.logger.log(`[Socket] Sent message to receiver ${userIdReceive} (socketId: ${receiverSocketId})`);
         } else {
-            this.logger.error(`Received message from ${userIdReceive} to ${content}`);
+            this.logger.warn(`Received message from ${userIdReceive} to ${content}`);
         }
     }
 
